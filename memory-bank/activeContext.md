@@ -1,28 +1,29 @@
 # Active Context - CapCut Clone Video Editor
 
 **Last Updated**: 2025-01-27  
-**Current Phase**: Project Foundation - Phase 1 Complete  
+**Current Phase**: Phase 2 - Backend & FFmpeg Integration (In Progress)  
 **Session Type**: Development
 
 ## Current Work Focus
 
-**Primary Objective**: Complete Phase 1 foundation setup to enable backend development.
+**Primary Objective**: Implement backend FFmpeg integration for media operations.
 
-All foundational tasks (1.1-1.4) are complete. The project now has complete type definitions and state management ready for component development.
+Phase 1 complete. Currently implementing Rust backend for FFmpeg operations. Tasks 2.1 and 2.2 complete - FFmpeg binaries bundled and executor implemented.
 
 ## Recent Changes
 
 ### Latest Session
-- **Task 1.4 Complete**: Created Zustand stores for state management:
-  - `src/store/mediaStore.ts` - Media library state with CRUD operations
-  - `src/store/timelineStore.ts` - Timeline state with clips, tracks, playhead, duration recalculation
-  - `src/store/appStore.ts` - App-level state for export progress and errors
-  - All stores compile with no TypeScript errors
-  - Implemented following Module 3 architecture specification
+- **Task 2.2 Complete**: Implemented Rust FFmpeg executor:
+  - Created `src-tauri/src/ffmpeg.rs` with FFmpegExecutor struct
+  - Implemented methods: `get_metadata()`, `generate_thumbnail()`, `export_video()`
+  - Added MediaMetadata and ClipInfo structs
+  - Binary path resolution for dev mode (manifest directory)
+  - JSON parsing, FPS parsing, error handling with stderr output
+  - Build verified, compiles successfully
+- **Task 2.1 Complete**: Configured FFmpeg binaries in project resources
+  - Updated `tauri.conf.json` to include binary paths in resources
+  - Binaries verified executable and working
 - **Phase 1 Complete**: Project foundation (tasks 1.1-1.4) fully implemented
-  - Types defined and exported
-  - State management architecture in place
-  - Ready to begin backend development (Phase 2)
 
 ### Previous Work
 - **Task 1.1**: Initialized Tauri project structure with proper directory layout
@@ -37,11 +38,12 @@ All foundational tasks (1.1-1.4) are complete. The project now has complete type
 2. ✅ **Task 1.2**: Configure Tauri settings (complete)
 3. ✅ **Task 1.3**: Define TypeScript types (complete)
 4. ✅ **Task 1.4**: Create Zustand stores (complete)
-5. ⏳ **Task 2.1**: Download and bundle FFmpeg (next)
-   - Download FFmpeg binary for macOS
-   - Place in `src-tauri/binaries/`
-   - Make executable
-   - Update `tauri.conf.json` resources
+5. ✅ **Task 2.1**: Configure FFmpeg binaries (complete)
+6. ✅ **Task 2.2**: Implement Rust FFmpeg executor (complete)
+7. ⏳ **Task 2.3**: Create Tauri commands (next)
+   - Create `src-tauri/src/commands.rs`
+   - Implement IPC commands: `get_media_metadata`, `generate_thumbnail`, `export_video`
+   - Register commands in lib.rs
 
 ## Active Decisions & Considerations
 

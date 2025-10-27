@@ -1,8 +1,8 @@
 # Progress - CapCut Clone Video Editor
 
 **Last Updated**: 2025-01-27  
-**Project Phase**: Phase 1 Complete - Foundation Ready  
-**Overall Completion**: ~12% (Phase 1 Foundation Complete)
+**Project Phase**: Phase 2 - Backend Integration (In Progress)  
+**Overall Completion**: ~18% (Phase 1 Complete, Phase 2 in Progress)
 
 ## Implementation Status
 
@@ -25,12 +25,10 @@
 - ✅ Task 1.3: Define TypeScript types (Complete)
 - ✅ Task 1.4: Create Zustand stores (Complete)
 
-### ⏳ Not Started
-
-#### Phase 2: Backend & FFmpeg Integration
-- ⏳ Task 2.1: Download and bundle FFmpeg
-- ⏳ Task 2.2: Implement Rust FFmpeg executor
-- ⏳ Task 2.3: Create Tauri commands
+#### Phase 2: Backend & FFmpeg Integration (67%)
+- ✅ Task 2.1: Download and bundle FFmpeg (Complete)
+- ✅ Task 2.2: Implement Rust FFmpeg executor (Complete)
+- ⏳ Task 2.3: Create Tauri commands (In Progress)
 
 #### Phase 3: Media Import & Library
 - ⏳ Task 3.1: Create video service
@@ -82,7 +80,8 @@
 - ✅ **Directory Structure**: All source directories created (components, store, services, types, utils)
 - ✅ **TypeScript Types**: Complete type system for media and timeline
 - ✅ **State Management**: Zustand stores implemented (media, timeline, app)
-- ⏳ **FFmpeg Resources**: Temporarily removed to allow build (will add in Phase 2)
+- ✅ **FFmpeg Binaries**: Bundled and configured in resources
+- ✅ **Rust FFmpeg Executor**: Implemented with metadata, thumbnail, export methods
 
 ### Working Examples
 - **Default Greet Function**: Tauri IPC demonstration works
@@ -98,10 +97,9 @@
 - ❌ **Editing**: No clip trimming or manipulation
 
 ### Technical Gaps
-- ❌ **FFmpeg Integration**: FFmpeg not bundled, no Rust executor (planned Phase 2)
+- ❌ **Tauri IPC Commands**: Commands not implemented yet
 - ❌ **Components**: Only default template components exist
-- ❌ **Backend**: No custom Tauri commands yet
-- ❌ **Video Service**: No video operations implemented
+- ❌ **Video Service**: No frontend video service implemented
 - ❌ **UI Components**: Media library, timeline, preview, export dialog not built yet
 
 ## Current Code State
@@ -117,11 +115,10 @@
 
 ### Backend (Rust)
 **Location**: `src-tauri/src/`
-- **main.rs**: Minimal entry point delegating to library
-- **lib.rs**: Contains basic Tauri setup
-- **commands.rs**: Does not exist yet
-- **ffmpeg.rs**: Does not exist yet
-- **No FFmpeg binary**: Binary directory empty
+- **lib.rs**: Tauri setup with ffmpeg module
+- **ffmpeg.rs**: FFmpegExecutor implemented with all methods
+- **commands.rs**: Does not exist yet (Task 2.3)
+- **FFmpeg binaries**: Located in `src-tauri/binaries/`
 
 ### Configuration
 - **package.json**: Dependencies installed, scripts defined
@@ -181,6 +178,7 @@
 
 ### Code Quality
 - **TypeScript Coverage**: 20% (types and stores complete)
+- **Rust Coverage**: 25% (FFmpeg executor complete)
 - **Component Coverage**: 0% (no components created yet)
 - **Store Coverage**: 100% (all 3 stores implemented)
 - **Test Coverage**: 0% (no tests written yet)
