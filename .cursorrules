@@ -1,0 +1,261 @@
+# AI Development Rules for Cursor IDE
+
+## 🎯 CRITICAL - Read This FIRST
+
+**Before doing ANYTHING else in this project, you MUST:**
+
+1. **Read `memory-bank/activeContext.md`** - Current work focus, active decisions, what we're working on NOW
+2. **Read `memory-bank/progress.md`** - What's complete, what's next, current phase status
+3. **Reference `_docs/README.md`** - Project overview (if confused about structure or getting started)
+
+These memory bank files are your **ONLY source of truth** for project state. They are updated after every session and tell you exactly where we are.
+
+---
+
+## Modern Rules System
+
+This project uses **Cursor's modern rules system** with organized `.mdc` files. Detailed rules are located in:
+
+### Core Rules (Apply to All Files)
+- **`.cursor/rules/base.mdc`** - Core principles, project context, non-negotiables
+- **`.cursor/rules/workflow.mdc`** - Development workflow, process, check-ins, commits
+
+### Domain-Specific Rules (Apply to Specific Files)
+- **`.cursor/rules/code-standards.mdc`** - TypeScript strict mode, code quality, performance
+- **`.cursor/rules/firebase.mdc`** - Firebase patterns, security rules, Cloud Functions
+- **`.cursor/rules/react-native.mdc`** - Mobile development, components, navigation
+- **`.cursor/rules/testing.mdc`** - Testing requirements before task completion
+- **`.cursor/rules/documentation.mdc`** - Context summaries, memory bank updates
+
+**See `.cursor/rules/README.md` for complete documentation.**
+
+---
+
+## Quick Reference
+
+### Core Principles (from base.mdc)
+
+1. **Follow Established Architecture** - Don't deviate without approval
+2. **Complete Tasks Sequentially** - No skipping or parallel work
+3. **Communicate Proactively** - Ask when uncertain
+4. **Maintain Context** - Document everything
+5. **Quality Over Speed** - Working code beats fast broken code
+
+### Critical Workflow (from workflow.mdc)
+
+**⚠️ ALWAYS ASK when:**
+- Requirements unclear or multiple solutions exist
+- Decision impacts architecture
+- Adding functionality not in task-list.md
+- Uncertain about completion criteria
+- Encountering errors with multiple root causes
+
+**✅ ALWAYS CHECK IN after completing ANY task**
+- Stop and report with completion format
+- Wait for approval before next task
+
+**📝 NEVER COMMIT automatically**
+- Always ask for commit approval first
+- Use format: `[PHASE-X] Brief description`
+
+**📄 ALWAYS DOCUMENT**
+- Create context summary after every task
+- Location: `context-summaries/YYYY-MM-DD-task-name.md`
+
+### Non-Negotiables (from base.mdc)
+
+These principles MUST be followed:
+
+1. ✅ **TypeScript Strict Mode** - No `any` without documentation
+2. ✅ **Ask Before Acting** - When uncertain, stop and ask
+3. ✅ **Sequential Development** - Follow task-list.md order
+4. ✅ **Context Documentation** - Document all decisions
+5. ✅ **Security First** - Proper Firebase rules, no secrets
+6. ✅ **Real Device Testing** - Push notifications need physical iPhone
+7. ✅ **Commit Approval Required** - Never auto-commit
+
+### Status Indicators (from workflow.mdc)
+
+Use these emoji prefixes in communication:
+- ⚠️ Clarification needed
+- ✅ Task completed
+- 📝 Ready to commit
+- 🚨 Error encountered
+- 💡 Suggestion/opportunity
+- 🤔 Need help/stuck
+- ⚡ Performance concern
+- 🔄 Refactoring opportunity
+- 🔒 Security concern
+
+---
+
+## Essential Documentation
+
+**Always reference before making decisions:**
+
+| Document | Purpose | When to Read |
+|----------|---------|--------------|
+| `memory-bank/activeContext.md` | Current work focus | Start of every session |
+| `memory-bank/progress.md` | What's done, what's next | Start of every session |
+| `memory-bank/projectbrief.md` | Project foundation | When unclear on scope/goals |
+| `memory-bank/systemPatterns.md` | Architecture patterns | When implementing features |
+| `memory-bank/techContext.md` | Tech stack details | When setting up or configuring |
+| `_docs/README.md` | Project overview | When confused about structure |
+| `_docs/architecture.md` | System architecture | Before major decisions |
+| `_docs/task-list.md` | Implementation tasks | For current task details |
+| `_docs/glossary.md` | UX/UI terminology | Before any UX/UI discussion |
+
+---
+
+## Priority Hierarchy (from base.mdc)
+
+When making decisions, prioritize in this order:
+
+1. **User instructions** - Always follow direct guidance
+2. **Project requirements** - Meet task-list.md and architecture specs
+3. **Code quality** - Maintainable, readable, type-safe
+4. **Established patterns** - Consistency with existing code
+5. **Performance** - Meet architecture targets
+6. **User experience** - Smooth, intuitive interactions
+7. **Future extensibility** - Easy to extend later
+
+**When priorities conflict: ASK the user, don't assume.**
+
+---
+
+## Code Quality Standards (from code-standards.mdc)
+
+### TypeScript
+- ✅ Strict mode (no implicit any)
+- ✅ Define interfaces for all data structures
+- ✅ Type all parameters and returns
+- ❌ NO `any` unless absolutely necessary (document why)
+- ❌ NO `@ts-ignore` without explanation
+
+### File Organization
+- One component/function per file
+- Consistent naming (check existing codebase)
+- Group related files together
+- Keep files under 200-300 lines
+
+### Performance
+- Avoid unnecessary re-renders (React.memo, useMemo, useCallback)
+- Debounce/throttle high-frequency events
+- Optimize database queries (indexes, limits, pagination)
+- Lazy load heavy dependencies
+- Profile before optimizing
+
+---
+
+## Session Management (from workflow.mdc)
+
+### At Session Start
+- [ ] Read `memory-bank/activeContext.md`
+- [ ] Review `memory-bank/progress.md`
+- [ ] Check current task in task-list.md
+- [ ] Confirm understanding with user
+- [ ] Ask about blockers or priority changes
+
+### During Development
+- [ ] Follow task-list.md sequentially
+- [ ] Ask clarifying questions when uncertain
+- [ ] Test incrementally
+- [ ] Document decisions
+- [ ] Follow existing patterns
+
+### After Each Task
+- [ ] Create context summary
+- [ ] Check in with completion report
+- [ ] ASK about committing (never automatic)
+- [ ] Update task-list.md checkboxes
+- [ ] Wait for approval before next task
+
+### At Session End
+- [ ] Create session summary if significant progress
+- [ ] Note blockers or open questions
+- [ ] Suggest next steps
+- [ ] Ensure context documented
+
+---
+
+## Testing Requirements (from testing.mdc)
+
+### Before Marking Task Complete
+- [ ] Code compiles without errors
+- [ ] No linting warnings (unless documented)
+- [ ] Component/function works as expected
+- [ ] Tested in development environment
+- [ ] Edge cases considered and tested
+- [ ] Error handling implemented
+- [ ] Follows established patterns
+
+---
+
+## Project Context (from base.mdc)
+
+**Project:** WhatsApp Clone - iOS messaging app with AI layer  
+**Tech Stack:** React Native + Expo + Firebase + TypeScript  
+**Current Phase:** Phase 2 - One-on-One Messaging (see progress.md)  
+**Goal:** TestFlight deployment with 5-100 alpha testers
+
+**Key Constraints:**
+- iOS only (initially)
+- 20-user group limit
+- TypeScript strict mode
+- Dual database (Firestore + RTDB)
+- Optimistic UI pattern
+- Offline-first architecture
+
+---
+
+## Success Metrics (from base.mdc)
+
+Effectiveness measured by:
+- ✅ Tasks completed per requirements
+- ✅ Code quality and standards adherence
+- ✅ Clear communication and documentation
+- ✅ Minimal back-and-forth from assumptions
+- ✅ Working features with proper testing
+- ✅ Well-documented context for future sessions
+- ✅ Proactive issue identification
+- ✅ Efficient user collaboration
+
+---
+
+## Always Do
+- ✅ ASK when uncertain
+- ✅ CHECK IN after tasks
+- ✅ DOCUMENT everything
+- ✅ FOLLOW established patterns
+- ✅ TEST frequently
+- ✅ STAY IN SCOPE
+- ✅ EXPLAIN reasoning
+
+## Never Do
+- ❌ NEVER commit automatically
+- ❌ NEVER skip tasks
+- ❌ NEVER add unplanned features
+- ❌ NEVER assume user preferences
+- ❌ NEVER ignore errors/warnings
+- ❌ NEVER deviate from architecture without approval
+- ❌ NEVER work on multiple tasks simultaneously
+
+---
+
+## For Detailed Rules
+
+All detailed rules, patterns, and guidelines are in **`.cursor/rules/*.mdc`** files. The rules are automatically applied based on which files you're editing:
+
+- Editing source code? → `code-standards.mdc` applies
+- Working with Firebase? → `firebase.mdc` applies
+- Building React Native components? → `react-native.mdc` applies
+- Writing tests? → `testing.mdc` applies
+- Creating documentation? → `documentation.mdc` applies
+
+You don't need to manually check which rules apply - Cursor handles this automatically based on glob patterns.
+
+---
+
+**Remember:** A thoughtful question is better than a wrong assumption. When in doubt, ask.
+
+**Most Important:** Always start by reading the memory bank files. They tell you exactly where we are and what we're working on.
