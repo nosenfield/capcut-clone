@@ -72,13 +72,14 @@ Create new Tauri + React + TypeScript project with Vite. Set up directory struct
 
 **Files Created**:
 - Project root with proper structure
-- `tailwind.config.js`
 - `vite.config.ts` (verify Tauri config)
 - `.gitignore` (comprehensive ignore rules)
 - `_context-summaries/.gitkeep`
 - `_temp/.gitkeep`
 - `src-tauri/binaries/` directory
 - `scripts/` directory
+- `postcss.config.js` for PostCSS/Tailwind processing
+- **Note**: TailwindCSS v4 doesn't require `tailwind.config.js` - uses `@import "tailwindcss"` in CSS instead
 
 **Files Verified**:
 - `_docs/architecture.md` (this file provides the specification)
@@ -104,7 +105,7 @@ Configure `tauri.conf.json` with proper permissions and settings for video editi
 
 **Steps**:
 1. Open `src-tauri/tauri.conf.json`
-2. Set bundle identifier: `com.videoeditor.app`
+2. Set bundle identifier: `com.nosenfield.capcut-clone`
 3. Configure allowlist:
    - Enable `shell.execute` and `shell.sidecar` for FFmpeg
    - Enable `dialog.open` and `dialog.save` for file pickers
@@ -1084,7 +1085,7 @@ Package application as distributable .dmg for easy installation.
    - Drag app to Applications folder
    - Launch from Applications
    - Verify all features work
-3. Name properly: `VideoEditor-v1.0.0.dmg`
+3. Name properly: `CapcutClone-v1.0.0.dmg`
 4. Optional: Customize .dmg appearance (background, window size)
 
 **Acceptance Criteria**:
@@ -1095,7 +1096,7 @@ Package application as distributable .dmg for easy installation.
 - [ ] .dmg is properly named with version
 
 **Deliverables**:
-- `VideoEditor-v1.0.0.dmg`
+- `CapcutClone-v1.0.0.dmg`
 
 ---
 

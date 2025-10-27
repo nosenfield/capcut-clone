@@ -86,7 +86,7 @@ Configure `tauri.conf.json` with proper permissions and settings.
 
 **Steps**:
 1. Open `src-tauri/tauri.conf.json`
-2. Set bundle identifier: `com.videoeditor.app`
+2. Set bundle identifier: `com.nosenfield.capcut-clone`
 3. Configure allowlist:
    - Enable `shell.execute` and `shell.sidecar` for FFmpeg
    - Enable `dialog.open` and `dialog.save` for file pickers

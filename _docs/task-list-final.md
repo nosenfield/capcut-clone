@@ -1704,7 +1704,7 @@ Create final production build and prepare for distribution.
 - [ ] Ready for distribution
 
 **Deliverables**:
-- `VideoEditor-v1.0.0.dmg`
+- `CapcutClone-v1.0.0.dmg`
 - User documentation
 - Release notes
 

@@ -216,7 +216,7 @@ This project follows an AI-assisted development methodology with dedicated docum
     "active": true,
     "targets": "dmg",
     "resources": ["binaries/ffmpeg"],
-    "identifier": "com.videoeditor.app",
+    "identifier": "com.nosenfield.capcut-clone",
     "icon": ["icons/icon.icns"]
   },
   "tauri": {
