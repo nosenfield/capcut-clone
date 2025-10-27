@@ -89,21 +89,34 @@ Options: A) Commit now B) Wait C) Modify message
 
 **Commit format:** `[Phase X.Y] Brief description`
 
-### Rule 4: Document Everything
+### Rule 4: Document When Needed
 
-After EVERY completed task, **ASK** if you should create a context summary:
+After completing a task, **ASK** if you should create a context summary:
 
 ```
 📄 CREATE CONTEXT SUMMARY?
 
 Task completed: [Task X.Y name]
+Complexity: [Straightforward / Complex / Critical]
 Next file number: [N based on existing files]
 Suggested filename: N_YYYY.MM.DD.description.md
+
+Recommend creating summary: [Yes/No - with brief reason]
 
 Would you like me to create a context summary?
 A) Yes, create it
 B) No, skip for now
 ```
+
+**When to recommend creating summaries:**
+- ✅ Difficult bug fixes with non-obvious solutions
+- ✅ Important architectural decisions or discoveries
+- ✅ Complex FFmpeg command constructions
+- ✅ Tricky Tauri IPC integrations
+- ✅ Performance optimizations with specific techniques
+- ✅ Security considerations or permission configurations
+- ❌ Straightforward implementations following existing patterns
+- ❌ Simple component creation with no special considerations
 
 **File naming format:** `N_YYYY.MM.DD.description.md`
 - `N` = Sequential number starting at 0, increment for each new summary
@@ -112,18 +125,60 @@ B) No, skip for now
 
 **Examples:**
 - `0_2025.01.15.setup-project-structure.md`
-- `1_2025.01.15.implement-ffmpeg-executor.md`
-- `2_2025.01.16.build-media-library.md`
+- `1_2025.01.15.ffmpeg-binary-path-resolution.md`
+- `2_2025.01.16.fix-timeline-drag-performance.md`
+
+**Summary Content Guidelines:**
+
+**Keep summaries SUCCINCT** - focus on key information:
+
+```markdown
+# Context Summary: [Task X.Y - Task Name]
+**Date:** [Date]
+**Complexity:** [Straightforward/Complex/Critical]
+
+## Overview
+[1-2 sentences: what was implemented]
+
+## Key Files
+- `path/to/file` - [one line purpose]
+
+## Important Details
+[ONLY include if relevant - omit entire section if not needed]
+
+### Bug Fix / Discovery / Decision
+[Detailed explanation of the non-obvious solution, discovery, or decision]
+[Why this approach was chosen over alternatives]
+[What to watch out for in the future]
+
+### Code Pattern
+[Only include critical code snippets that future sessions MUST know]
+[NOT for simple implementations - only novel or tricky patterns]
+
+## Testing Notes
+[Brief testing approach - expand if complex edge cases discovered]
+
+## Next Steps
+[What depends on this or should be done next]
+```
+
+**What to include in "Important Details" section:**
+- Non-obvious bug fixes (root cause + solution reasoning)
+- Architectural decisions that deviate from or extend architecture.md
+- FFmpeg command gotchas or performance tricks
+- Tauri permission issues and resolutions
+- Complex state management patterns
+- Performance optimizations with measurable impact
+- Security considerations
+
+**What to OMIT:**
+- Routine implementations that follow established patterns
+- Obvious file changes (list files, but don't explain obvious changes)
+- Standard React component creation
+- Straightforward type definitions
+- Simple bug fixes with clear error messages
 
 **To find next number:** Check existing files in `_context-summaries/` and use highest N + 1
-
-**Summary should include:**
-- What was built
-- Files changed (with purpose)
-- Technical decisions and rationale
-- FFmpeg/Tauri specifics
-- Testing notes
-- Next steps
 
 ---
 
@@ -235,6 +290,7 @@ See `memory-bank/productContext.md` for complete scope.
 
 **Every 5 tasks or 2 hours:**
 - Ask if you should create session summary: `N_YYYY.MM.DD.session-summary.md` in `_context-summaries/`
+- Session summaries should be more comprehensive than task summaries
 
 **Session end:**
 - [ ] Document progress
@@ -249,10 +305,11 @@ See `memory-bank/productContext.md` for complete scope.
 2. ✅ Ask when uncertain
 3. ✅ Check in after tasks
 4. ✅ Never auto-commit
-5. ✅ Ask before creating summaries
-6. ✅ TypeScript strict mode
-7. ✅ Sequential task development
-8. ✅ Test with real videos
+5. ✅ Ask before creating summaries (recommend for complex/critical tasks only)
+6. ✅ Keep summaries succinct - details only when needed
+7. ✅ TypeScript strict mode
+8. ✅ Sequential task development
+9. ✅ Test with real videos
 
 ---
 
@@ -260,7 +317,7 @@ See `memory-bank/productContext.md` for complete scope.
 
 **Before any work:** activeContext.md → progress.md → architecture.md  
 **When uncertain:** Stop and ask  
-**After task:** Check in → ask about summary → ask about commit → wait  
+**After task:** Check in → ask about summary (if complex/critical) → ask about commit → wait  
 **Before commit:** Ask for approval  
 **Every module:** Read architecture.md spec first  
 
@@ -268,9 +325,9 @@ See `memory-bank/productContext.md` for complete scope.
 - ✅ MVP tasks completed (task-list-mvp.md)
 - ✅ Video processing works flawlessly
 - ✅ Clean, type-safe code
-- ✅ Complete documentation
+- ✅ Complete documentation (when needed)
 - ✅ Architecture compliance
 
 ---
 
-**Remember:** Ask questions > make assumptions. Working MVP > feature creep. Read memory-bank files first.
+**Remember:** Ask questions > make assumptions. Working MVP > feature creep. Read memory-bank files first. Document discoveries, not routine work.
