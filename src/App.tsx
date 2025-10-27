@@ -1,50 +1,30 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import { MediaLibrary } from "./components/MediaLibrary/MediaLibrary";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app-container h-screen flex flex-col bg-gray-950">
+      <header className="bg-gray-900 border-b border-gray-700 px-6 py-3">
+        <h1 className="text-xl font-semibold text-white">CapCut Clone - Video Editor</h1>
+      </header>
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Media Library Sidebar */}
+        <div className="w-80 border-r border-gray-700">
+          <MediaLibrary />
+        </div>
+        
+        {/* Main Content Area - Timeline and Preview (placeholder) */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 bg-gray-900 flex items-center justify-center">
+            <p className="text-gray-500">Preview Player (Coming Soon)</p>
+          </div>
+          <div className="h-48 bg-gray-950 border-t border-gray-700 flex items-center justify-center">
+            <p className="text-gray-500">Timeline (Coming Soon)</p>
+          </div>
+        </div>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 
