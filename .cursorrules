@@ -91,10 +91,33 @@ Options: A) Commit now B) Wait C) Modify message
 
 ### Rule 4: Document Everything
 
-After EVERY completed task, create:
-`_context-summaries/YYYY-MM-DD-task-X.Y.md`
+After EVERY completed task, **ASK** if you should create a context summary:
 
-Include:
+```
+📄 CREATE CONTEXT SUMMARY?
+
+Task completed: [Task X.Y name]
+Next file number: [N based on existing files]
+Suggested filename: N_YYYY.MM.DD.description.md
+
+Would you like me to create a context summary?
+A) Yes, create it
+B) No, skip for now
+```
+
+**File naming format:** `N_YYYY.MM.DD.description.md`
+- `N` = Sequential number starting at 0, increment for each new summary
+- `YYYY.MM.DD` = Date (e.g., 2025.01.15)
+- `description` = Brief kebab-case description (e.g., `setup-project-structure`)
+
+**Examples:**
+- `0_2025.01.15.setup-project-structure.md`
+- `1_2025.01.15.implement-ffmpeg-executor.md`
+- `2_2025.01.16.build-media-library.md`
+
+**To find next number:** Check existing files in `_context-summaries/` and use highest N + 1
+
+**Summary should include:**
 - What was built
 - Files changed (with purpose)
 - Technical decisions and rationale
@@ -190,6 +213,7 @@ See `memory-bank/productContext.md` for complete scope.
 - ✅ Task completed
 - 📝 Ready to commit
 - 🚨 Error encountered
+- 📄 Context summary prompt
 - 💡 Suggestion
 - 🤔 Need help
 - ⚡ Performance concern
@@ -210,7 +234,7 @@ See `memory-bank/productContext.md` for complete scope.
 - [ ] Ask about blockers
 
 **Every 5 tasks or 2 hours:**
-- Create SESSION_SUMMARY.md in `_context-summaries/`
+- Ask if you should create session summary: `N_YYYY.MM.DD.session-summary.md` in `_context-summaries/`
 
 **Session end:**
 - [ ] Document progress
@@ -225,7 +249,7 @@ See `memory-bank/productContext.md` for complete scope.
 2. ✅ Ask when uncertain
 3. ✅ Check in after tasks
 4. ✅ Never auto-commit
-5. ✅ Document everything
+5. ✅ Ask before creating summaries
 6. ✅ TypeScript strict mode
 7. ✅ Sequential task development
 8. ✅ Test with real videos
@@ -236,7 +260,7 @@ See `memory-bank/productContext.md` for complete scope.
 
 **Before any work:** activeContext.md → progress.md → architecture.md  
 **When uncertain:** Stop and ask  
-**After task:** Document → check in → wait  
+**After task:** Check in → ask about summary → ask about commit → wait  
 **Before commit:** Ask for approval  
 **Every module:** Read architecture.md spec first  
 
