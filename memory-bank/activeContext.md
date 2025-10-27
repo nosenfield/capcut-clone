@@ -85,6 +85,7 @@ When continuing work on this project:
 - Clear separation between MVP and full product features
 - Modular design enables incremental development
 - Tauri provides clean IPC boundary between React frontend and Rust backend
+- **TailwindCSS v4**: Uses `@import "tailwindcss"` in CSS files instead of requiring `tailwind.config.js` - no separate config file needed
 
 ## Communication Ponits
 

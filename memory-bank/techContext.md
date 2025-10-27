@@ -49,6 +49,7 @@
 - **Purpose**: Rapid UI styling
 - **Why**: Consistent design system, dark theme support, responsive utilities
 - **Pattern**: Utility classes, dark mode via classes
+- **Note**: TailwindCSS v4 doesn't require `tailwind.config.js` - uses `@import "tailwindcss"` in CSS files instead
 
 **PostCSS 8.5.6** - CSS processing
 - **Purpose**: TailwindCSS integration
@@ -93,7 +94,7 @@
 - `tsconfig.json` - TypeScript compiler configuration
 - `tsconfig.node.json` - TypeScript config for Vite
 - `vite.config.ts` - Vite and Tauri plugin configuration
-- `tailwind.config.js` - TailwindCSS configuration
+- **Note**: TailwindCSS v4 doesn't require a config file - uses CSS `@import` instead
 
 ### Backend Configuration
 - `src-tauri/Cargo.toml` - Rust dependencies and crate configuration
