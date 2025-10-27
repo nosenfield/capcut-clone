@@ -219,7 +219,7 @@ pids/
 .history/
 
 # Cursor
-.cursor/
+# .cursor/
 
 # WebStorm / IntelliJ
 .idea/
