@@ -39,31 +39,58 @@ Tasks are grouped by functional area and ordered for optimal implementation flow
 **Priority**: Critical
 
 **Description**:
-Create new Tauri + React + TypeScript project with Vite. Set up directory structure as defined in architecture.
+Create new Tauri + React + TypeScript project with Vite. Set up directory structure as defined in architecture. Verify and organize existing documentation directories.
 
 **Steps**:
-1. Run `npm create tauri-app` with React + TypeScript template
-2. Create directory structure:
-   - `src/components/` with subdirectories
+1. Run `npm create tauri-app` with React + TypeScript template (if starting fresh)
+2. Verify documentation directories exist (should already be present):
+   - `_docs/` with architecture.md, task-list-mvp.md, task-list-final.md
+   - `_context-summaries/` for AI context (add .gitkeep if empty)
+   - `_temp/` for temporary files (add .gitkeep if empty)
+3. Create source code directory structure:
+   - `src/components/` with subdirectories (MediaLibrary, Timeline, Preview, ExportDialog)
    - `src/store/` for state management
    - `src/services/` for business logic
    - `src/types/` for TypeScript definitions
    - `src/utils/` for helpers
-3. Install core dependencies: `zustand`, `konva`, `react-konva`, `uuid`
-4. Install TailwindCSS and configure
-5. Verify dev server runs: `npm run tauri dev`
+4. Create backend directory structure:
+   - `src-tauri/binaries/` for FFmpeg (add to .gitignore)
+   - `scripts/` for utility scripts (e.g., download-ffmpeg.sh)
+5. Install core dependencies: `zustand`, `konva`, `react-konva`, `uuid`
+6. Install TailwindCSS and configure
+7. Create comprehensive `.gitignore` file
+8. Verify dev server runs: `npm run tauri dev`
 
 **Acceptance Criteria**:
 - [ ] `npm run tauri dev` launches app window
 - [ ] Hot reload works (changes reflect immediately)
-- [ ] Directory structure matches architecture
+- [ ] Directory structure matches architecture (including `_docs/`, `_context-summaries/`, `_temp/`)
 - [ ] All dependencies installed and importable
 - [ ] TailwindCSS classes work in components
+- [ ] `.gitignore` configured to exclude `_context-summaries/`, `_temp/`, `src-tauri/binaries/`, and node_modules
+- [ ] Documentation directories properly organized
 
 **Files Created**:
 - Project root with proper structure
 - `tailwind.config.js`
 - `vite.config.ts` (verify Tauri config)
+- `.gitignore` (comprehensive ignore rules)
+- `_context-summaries/.gitkeep`
+- `_temp/.gitkeep`
+- `src-tauri/binaries/` directory
+- `scripts/` directory
+
+**Files Verified**:
+- `_docs/architecture.md` (this file provides the specification)
+- `_docs/task-list-mvp.md` (this file)
+- `_docs/task-list-final.md`
+
+**Optional Enhancement**:
+Update `README.md` to include:
+- Link to `_docs/architecture.md` for system overview
+- Link to `_docs/task-list-mvp.md` for development roadmap
+- Note about `_context-summaries/` for AI development workflow
+- FFmpeg binary setup instructions (to be detailed in Task 2.1)
 
 ---
 
@@ -83,13 +110,18 @@ Configure `tauri.conf.json` with proper permissions and settings for video editi
    - Enable `dialog.open` and `dialog.save` for file pickers
    - Enable `fs.readFile` and `fs.writeFile` with proper scopes
 4. Set bundle target to `dmg` (macOS only)
-5. Add resources path for FFmpeg binary (prepare for later)
+5. Add resources path for FFmpeg binaries:
+   - Set `"resources": ["binaries/ffmpeg", "binaries/ffprobe"]`
+   - Note: Actual binaries will be added in Task 2.1
+   - Directory structure prepared in Task 1.1
 
 **Acceptance Criteria**:
 - [ ] `tauri.conf.json` has restrictive permissions (only what's needed)
 - [ ] Bundle settings configured for macOS
 - [ ] File system scope includes necessary directories
 - [ ] App identifier is unique and proper
+- [ ] Resources array includes both ffmpeg and ffprobe paths
+- [ ] Configuration ready for FFmpeg integration (Task 2.1)
 
 **Files Modified**:
 - `src-tauri/tauri.conf.json`

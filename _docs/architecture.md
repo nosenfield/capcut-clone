@@ -96,38 +96,110 @@ Each module below is independent and can be implemented incrementally. Modules d
 
 ```
 video-editor/
-├── src-tauri/              # Rust backend
+├── .cursor/                    # Cursor IDE configuration
+│   └── mcp.json               # Model Context Protocol config
+├── .git/                      # Git version control
+├── .vscode/                   # VSCode settings (optional)
+│   ├── settings.json
+│   └── extensions.json
+│
+├── _docs/                     # Project documentation
+│   ├── architecture.md        # System architecture (this file)
+│   ├── task-list-mvp.md      # MVP implementation tasks
+│   ├── task-list-final.md    # Post-MVP feature tasks
+│   ├── development-guide.md  # Development setup & workflow
+│   ├── api-reference.md      # API documentation
+│   └── user-manual.md        # End-user documentation (Post-MVP)
+│
+├── _context-summaries/        # AI context summaries (Cursor workflow)
+│   ├── .gitkeep
+│   ├── session-*.md          # Session summaries (gitignored)
+│   └── progress-*.md         # Progress snapshots (gitignored)
+│
+├── _temp/                     # Temporary files (gitignored)
+│   ├── .gitkeep
+│   ├── test-exports/         # Test export outputs
+│   └── debug-logs/           # Debug information
+│
+├── src-tauri/                 # Rust backend
 │   ├── src/
-│   │   ├── main.rs        # Tauri entry point
-│   │   ├── ffmpeg.rs      # FFmpeg execution logic
-│   │   └── commands.rs    # Tauri IPC commands
-│   ├── Cargo.toml         # Rust dependencies
-│   └── tauri.conf.json    # Tauri configuration
-├── src/                    # React frontend
-│   ├── components/        # React components
+│   │   ├── main.rs           # Tauri entry point
+│   │   ├── ffmpeg.rs         # FFmpeg execution logic
+│   │   └── commands.rs       # Tauri IPC commands
+│   ├── binaries/             # Bundled executables
+│   │   ├── ffmpeg            # FFmpeg binary (gitignored, download separately)
+│   │   ├── ffprobe           # FFprobe binary (gitignored, download separately)
+│   │   └── download-ffmpeg.sh # Download script
+│   ├── icons/                # Application icons
+│   │   └── icon.icns
+│   ├── Cargo.toml            # Rust dependencies
+│   └── tauri.conf.json       # Tauri configuration
+│
+├── src/                       # React frontend
+│   ├── components/           # React components
 │   │   ├── MediaLibrary/
 │   │   ├── Timeline/
 │   │   ├── Preview/
 │   │   └── ExportDialog/
-│   ├── store/             # Zustand state management
+│   ├── store/                # Zustand state management
 │   │   ├── mediaStore.ts
 │   │   ├── timelineStore.ts
 │   │   └── appStore.ts
-│   ├── services/          # Business logic
-│   │   ├── ffmpegService.ts
-│   │   └── videoService.ts
-│   ├── types/             # TypeScript definitions
+│   ├── services/             # Business logic
+│   │   ├── videoService.ts
+│   │   └── projectService.ts
+│   ├── types/                # TypeScript definitions
 │   │   ├── media.ts
 │   │   └── timeline.ts
-│   ├── utils/             # Helper functions
+│   ├── utils/                # Helper functions
 │   ├── App.tsx
 │   └── main.tsx
-├── public/                 # Static assets
+│
+├── public/                    # Static assets
+├── scripts/                   # Build and utility scripts
+│   └── download-ffmpeg.sh
+│
+├── .gitignore
+├── .cursorignore             # Cursor-specific ignore rules
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
 └── tailwind.config.js
 ```
+
+### Documentation Organization
+
+**AI-First Development Structure**:
+
+This project follows an AI-assisted development methodology with dedicated documentation directories:
+
+**`_docs/`** - Project Documentation
+- Contains architecture, task lists, and design documents
+- Prefixed with underscore to appear at top of directory listings
+- Separate from code for clarity and easy access
+- Not part of the build process, purely for development reference
+- Files in this directory serve as persistent context for AI coding tools
+
+**`_context-summaries/`** - AI Context and Session Summaries
+- Used by Cursor IDE and other AI development tools
+- Contains interval summaries during development sessions
+- Helps maintain context across long development workflows
+- Stores conversation checkpoints and decision logs
+- Gitignored to avoid cluttering the repository
+
+**`_temp/`** - Temporary Working Files
+- Scratch space for experiments and temporary outputs
+- Safe location for test files during development
+- Completely gitignored
+- Can be safely deleted without affecting project
+
+**`src-tauri/binaries/`** - FFmpeg Binaries
+- Contains bundled FFmpeg and FFprobe executables (~80MB total)
+- Gitignored due to large file size
+- Must be downloaded separately (see scripts/download-ffmpeg.sh)
+- Required for all video processing operations
+
+**Note**: All underscore-prefixed directories (`_docs/`, `_context-summaries/`, `_temp/`) are organizational aids for development workflow. They are not required for the application to build or run. The application runtime only depends on `src/`, `src-tauri/`, and `public/` directories.
 
 ### Key Configuration Files
 
