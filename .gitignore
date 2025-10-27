@@ -1,0 +1,399 @@
+# Video Editor - .gitignore
+# Generated for Tauri + React + TypeScript + Vite + FFmpeg project
+
+# ============================================
+# macOS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ============================================
+# Node.js / npm / yarn
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ============================================
+# Rust / Cargo (Tauri Backend)
+# ============================================
+# Cargo build artifacts
+src-tauri/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo.lock (uncomment if you want to ignore it)
+# src-tauri/Cargo.lock
+
+# ============================================
+# Tauri
+# ============================================
+# Tauri build output
+src-tauri/target/
+src-tauri/WixTools/
+
+# Tauri generated files
+src-tauri/gen/
+
+# Tauri bundle outputs
+src-tauri/bundle/
+
+# ============================================
+# Vite
+# ============================================
+dist/
+dist-ssr/
+*.local
+
+# Vite cache
+.vite/
+node_modules/.vite/
+
+# ============================================
+# TypeScript
+# ============================================
+*.tsbuildinfo
+dist/
+build/
+
+# ============================================
+# React / Frontend Build
+# ============================================
+build/
+out/
+.next/
+.cache/
+
+# ============================================
+# FFmpeg Binaries (Large Files)
+# ============================================
+# FFmpeg binaries should be downloaded separately
+# Uncomment these lines and provide download instructions in README
+src-tauri/binaries/ffmpeg
+src-tauri/binaries/ffprobe
+# Alternative: Track a script to download them instead
+# !src-tauri/binaries/download-ffmpeg.sh
+
+# ============================================
+# Test Media Files
+# ============================================
+# Test videos (can be large)
+test-media/
+test-videos/
+test-clips/
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+
+# Exclude sample files for documentation
+!docs/samples/*.mp4
+!docs/samples/*.mov
+
+# ============================================
+# User Projects & Exports
+# ============================================
+# User-created project files
+projects/
+exports/
+output/
+rendered/
+
+# Temporary export files
+*.tmp.mp4
+*.tmp.mov
+temp-export-*
+
+# Auto-save files
+*.autosave.json
+autosave/
+
+# ============================================
+# Thumbnails & Generated Media
+# ============================================
+# Generated thumbnails
+thumbnails/
+.thumbnails/
+thumb-cache/
+
+# Proxy videos
+proxies/
+.proxies/
+
+# Waveform data
+waveforms/
+.waveform-cache/
+
+# ============================================
+# Environment Variables & Secrets
+# ============================================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# API keys (if using cloud services)
+**/secrets/
+**/keys/
+*.pem
+*.p8
+*.p12
+*.key
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Tauri logs
+tauri.log
+tauri-*.log
+
+# FFmpeg logs
+ffmpeg-*.log
+ffprobe-*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# IDE
+# ============================================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.history/
+
+# Cursor
+.cursor/
+
+# WebStorm / IntelliJ
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+
+# Jest
+jest-coverage/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ============================================
+# Temporary Files
+# ============================================
+tmp/
+temp/
+_temp/
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# System temp files
+*.bak
+*.swp
+*.swo
+
+# ============================================
+# macOS App Bundle (Development)
+# ============================================
+# Tauri .app bundle (regenerated on build)
+src-tauri/target/release/bundle/macos/*.app
+
+# DMG installers (track final release DMGs separately if needed)
+src-tauri/target/release/bundle/dmg/*.dmg
+
+# ============================================
+# Windows (Future Cross-Platform Support)
+# ============================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE_BIN/
+
+# Windows executables
+*.exe
+*.msi
+
+# ============================================
+# Linux (Future Cross-Platform Support)
+# ============================================
+*.AppImage
+*.deb
+*.rpm
+
+# ============================================
+# Code Signing & Distribution
+# ============================================
+# Code signing certificates (keep secure!)
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+
+# Notarization files
+notarization-*.log
+
+# ============================================
+# Performance Profiling
+# ============================================
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# Chrome profiling
+chrome-profiler-events*.json
+
+# ============================================
+# Documentation Builds
+# ============================================
+docs/build/
+docs/_build/
+docs/.doctrees/
+
+# ============================================
+# Design Files
+# ============================================
+*.sketch
+*.fig
+*.xd
+*.psd
+*.ai
+
+# ============================================
+# Archive Files
+# ============================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Exclude release archives if you want to track them
+# !releases/*.zip
+# !releases/*.dmg
+
+# ============================================
+# Database Files (Local Development)
+# ============================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# ============================================
+# Miscellaneous
+# ============================================
+.project
+.settings/
+.classpath
+
+# Lock files (optional - some teams prefer to track these)
+# package-lock.json
+# yarn.lock
+
+# ============================================
+# Custom Project-Specific
+# ============================================
+# User preferences
+user-preferences.json
+app-settings.json
+
+# Recent projects list
+recent-projects.json
+
+# License keys (if using licensed libraries)
+license.key
+*.lic
+
+# ============================================
+# AI/Development Tools
+# ============================================
+# Cursor AI cache
+.cursor-tutor/
+
+# GitHub Copilot
+.copilot/
+
+# ============================================
+# End of .gitignore
+# ============================================
