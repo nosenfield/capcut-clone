@@ -152,6 +152,8 @@ npm run preview          # Preview production frontend build
 ### Rust Dependencies (Cargo.toml)
 - `tauri ^2` - Tauri framework
 - `tauri-plugin-opener ^2` - File opening
+- `tauri-plugin-dialog ^2` - File dialogs (added in setup)
+- `tauri-plugin-fs ^2` - Filesystem operations (added in setup)
 - `serde ^1` - Serialization framework
 - `serde_json ^1` - JSON parsing
 

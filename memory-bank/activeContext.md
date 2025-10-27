@@ -1,38 +1,43 @@
 # Active Context - CapCut Clone Video Editor
 
-**Last Updated**: 2025-01-XX  
-**Current Phase**: Initial Setup - Memory Bank Initialization  
-**Session Type**: Setup
+**Last Updated**: 2025-01-27  
+**Current Phase**: Project Setup - Configuration Fixes  
+**Session Type**: Development
 
 ## Current Work Focus
 
-**Primary Objective**: Initialize memory bank system for the CapCut Clone video editing project.
+**Primary Objective**: Fix Tauri v2 permissions and TailwindCSS v4 configuration issues to enable development.
 
-This session is focused on establishing comprehensive documentation that will persist across AI development sessions, ensuring continuity and clear context for future development work.
+This session resolved configuration errors preventing the app from building and running.
 
 ## Recent Changes
 
 ### This Session
-- **Created memory bank structure** with all core documentation files:
-  - `projectbrief.md` - Foundation document defining scope and goals
-  - `productContext.md` - Purpose, problems, and user experience vision
-  - `activeContext.md` - Current work focus (this file)
-  - `systemPatterns.md` - Architecture and technical patterns
-  - `techContext.md` - Technology stack and setup
-  - `progress.md` - Implementation status and what works/doesn't
+- **Fixed Tauri v2 Permissions** - Added required plugins and corrected permission syntax:
+  - Added `tauri-plugin-dialog` and `tauri-plugin-fs` to `Cargo.toml`
+  - Initialized plugins in `src/lib.rs`
+  - Updated `capabilities/default.json` with correct Tauri v2 syntax
+- **Fixed TailwindCSS v4 Configuration** - Removed PostCSS plugin:
+  - Updated `postcss.config.js` to remove TailwindCSS plugin
+  - Using CSS `@import "tailwindcss"` approach
+- **Temporarily Removed FFmpeg Resources** - Commented out from `tauri.conf.json` to allow build
+- **Created Fix Documentation** - `_context-summaries/0_tauri-permissions-and-tailwind-fix.md`
 
 ### Previous Work
 - Project scaffold created using Tauri + React + TypeScript template
 - Architecture documentation authored (`_docs/architecture.md`)
 - MVP task list created (`_docs/task-list-mvp.md`)
 - Full product task list created (`_docs/task-list-final.md`)
+- Memory bank files initialized
 
 ## Immediate Next Steps
 
 1. ✅ **Memory bank initialization** (complete)
 2. ✅ **Task 1.1**: Initialize project structure and dependencies (complete)
 3. ✅ **Task 1.2**: Configure Tauri settings (complete)
-4. ⏳ **Task 1.3**: Define TypeScript types (next)
+4. ✅ **Fixed Tauri permissions** (complete) - Resolved build errors
+5. ✅ **Fixed TailwindCSS configuration** (complete) - v4 PostCSS issues resolved
+6. ⏳ **Task 1.3**: Define TypeScript types (next)
    - Create `src/types/media.ts` with MediaFile and MediaMetadata interfaces
    - Create `src/types/timeline.ts` with TimelineClip, TimelineTrack, TimelineState
 
@@ -61,20 +66,25 @@ This session is focused on establishing comprehensive documentation that will pe
 - **Next**: Foundation tasks (Phase 1)
 
 ### Current Code State
-The project has foundation complete but no video editing functionality yet:
-- ✅ Tauri configuration complete (window, bundle, resources)
-- ✅ Permissions configured (dialog, fs, core)
+The project foundation is complete and ready for development:
+- ✅ Tauri configuration complete (window, bundle)
+- ✅ Tauri v2 plugins installed and initialized (dialog, fs, opener)
+- ✅ Permissions configured with correct Tauri v2 syntax
 - ✅ Directory structure created (components, store, services, types, utils)
 - ✅ Dependencies installed (konva, react-konva, zustand, uuid)
-- ✅ TailwindCSS configured (v4 via CSS import)
+- ✅ TailwindCSS v4 configured (CSS import approach)
+- ✅ PostCSS configured correctly for TailwindCSS v4
+- ✅ App builds successfully (cargo build passes)
 - ⏳ Type definitions not yet created
 - ⏳ Stores not yet implemented
 - ⏳ Components not yet implemented
 - ⏳ Rust backend commands not yet implemented
+- ⏳ FFmpeg binaries not yet added (will be in Phase 2)
 
 ### Key Files to Reference
 - `_docs/architecture.md` - Complete system specification
 - `_docs/task-list-mvp.md` - Detailed implementation tasks
+- `_context-summaries/0_tauri-permissions-and-tailwind-fix.md` - Recent fixes documentation
 - `package.json` - Dependencies list
 - `src/App.tsx` - Default template code (will be replaced)
 
@@ -92,14 +102,15 @@ When continuing work on this project:
 - Clear separation between MVP and full product features
 - Modular design enables incremental development
 - Tauri provides clean IPC boundary between React frontend and Rust backend
-- **TailwindCSS v4**: Uses `@import "tailwindcss"` in CSS files instead of requiring `tailwind.config.js` - no separate config file needed
+- **TailwindCSS v4**: Uses `@import "tailwindcss"` in CSS files instead of requiring PostCSS plugin
+- **Tauri v2 Permissions**: Uses capabilities-based model in `capabilities/default.json` (not permission arrays)
+- **Plugin System**: Must install and initialize plugins in both `Cargo.toml` and `lib.rs`
+- **Build Status**: Project now builds successfully with `cargo build`
 
-## Communication Ponits
+## Communication Points
 
 ### Current Session Goals
-- Establish memory bank as single source of truth
-- Document project foundation clearly
-- Prepare for active development phase
-
-Comments
-
+- ✅ Resolved Tauri v2 permission issues
+- ✅ Fixed TailwindCSS v4 configuration
+- ✅ App builds successfully
+- ⏳ Ready to begin Task 1.3 (TypeScript types)
