@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "capcut-clone",
-        "width": 800,
-        "height": 600
+        "title": "CapCut Clone - Video Editor",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 600
       }
     ],
     "security": {
@@ -23,7 +25,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "dmg",
+    "resources": [
+      "binaries/ffmpeg",
+      "binaries/ffprobe"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

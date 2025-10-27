@@ -206,48 +206,50 @@ This project follows an AI-assisted development methodology with dedicated docum
 **tauri.conf.json** (critical settings):
 ```json
 {
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:5173",
-    "distDir": "../dist"
+  "productName": "capcut-clone",
+  "version": "0.1.0",
+  "identifier": "com.nosenfield.capcut-clone",
+  "app": {
+    "windows": [{
+      "title": "CapCut Clone - Video Editor",
+      "width": 1280,
+      "height": 800,
+      "minWidth": 1024,
+      "minHeight": 600
+    }]
   },
   "bundle": {
     "active": true,
     "targets": "dmg",
-    "resources": ["binaries/ffmpeg"],
-    "identifier": "com.nosenfield.capcut-clone",
+    "resources": ["binaries/ffmpeg", "binaries/ffprobe"],
     "icon": ["icons/icon.icns"]
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "execute": true,
-        "sidecar": true
-      },
-      "dialog": {
-        "all": false,
-        "open": true,
-        "save": true
-      },
-      "fs": {
-        "all": false,
-        "readFile": true,
-        "writeFile": true,
-        "scope": ["$APPDATA/*", "$RESOURCE/*"]
-      }
-    }
   }
 }
 ```
 
+**src-tauri/capabilities/default.json** (Tauri v2 permissions):
+```json
+{
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:scope-app-data",
+    "fs:scope-app-data-recursive"
+  ]
+}
+```
+
 **Implementation Notes**:
-- Bundle FFmpeg binary in `src-tauri/binaries/ffmpeg` directory
-- Use Tauri sidecar feature for FFmpeg execution
-- Restrict file system access to app data and resource directories
-- Enable only necessary Tauri APIs (principle of least privilege)
+- Tauri v2 uses capabilities-based permissions in `capabilities/default.json`
+- Bundle FFmpeg binaries in `src-tauri/binaries/` directory
+- Restrict file system access to app data directories
+- Enable only necessary permissions (principle of least privilege)
+- Window size optimized for video editing UI (1280x800 with minimum 1024x600)
 
 ---
 

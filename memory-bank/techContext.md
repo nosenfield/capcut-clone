@@ -98,7 +98,10 @@
 
 ### Backend Configuration
 - `src-tauri/Cargo.toml` - Rust dependencies and crate configuration
-- `src-tauri/tauri.conf.json` - Tauri app configuration (permissions, bundle settings)
+- `src-tauri/tauri.conf.json` - Tauri app configuration (window, bundle settings)
+- `src-tauri/capabilities/default.json` - Tauri v2 permissions (capabilities-based security)
+
+**Note**: Tauri v2 uses capabilities-based permissions in `capabilities/default.json` rather than configuring permissions in `tauri.conf.json` directly.
 
 ### Build Configuration
 - `.gitignore` - Git ignore patterns

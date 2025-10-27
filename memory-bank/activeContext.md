@@ -29,13 +29,12 @@ This session is focused on establishing comprehensive documentation that will pe
 
 ## Immediate Next Steps
 
-1. ✅ **Memory bank initialization** (current task)
-2. ⏳ **Review architecture documentation** to confirm understanding
-3. ⏳ **Begin Task 1.1**: Initialize project structure and dependencies
-   - Set up directory structure per architecture
-   - Install Zustand, Konva, React-Konva, UUID
-   - Configure TailwindCSS
-   - Create comprehensive `.gitignore`
+1. ✅ **Memory bank initialization** (complete)
+2. ✅ **Task 1.1**: Initialize project structure and dependencies (complete)
+3. ✅ **Task 1.2**: Configure Tauri settings (complete)
+4. ⏳ **Task 1.3**: Define TypeScript types (next)
+   - Create `src/types/media.ts` with MediaFile and MediaMetadata interfaces
+   - Create `src/types/timeline.ts` with TimelineClip, TimelineTrack, TimelineState
 
 ## Active Decisions & Considerations
 
@@ -43,6 +42,9 @@ This session is focused on establishing comprehensive documentation that will pe
 1. **Memory Bank Structure**: Following hierarchical documentation pattern with 6 core files
 2. **Development Approach**: AI-first, modular development as outlined in architecture
 3. **Platform Priority**: macOS-first, desktop-only for MVP
+4. **Tauri v2 Permissions**: Using capabilities-based security model in `capabilities/default.json`
+5. **Window Size**: 1280x800 default, 1024x600 minimum for video editing UI
+6. **Bundle Target**: macOS only (dmg) for MVP
 
 ### Open Questions
 - None currently - memory bank setup is straightforward
@@ -59,11 +61,16 @@ This session is focused on establishing comprehensive documentation that will pe
 - **Next**: Foundation tasks (Phase 1)
 
 ### Current Code State
-The project currently contains only the default Tauri template:
-- React app with greet function example
-- Basic Rust backend with no custom commands
-- No video editing functionality yet
-- Dependencies: konva, react-konva, zustand, uuid installed but not used
+The project has foundation complete but no video editing functionality yet:
+- ✅ Tauri configuration complete (window, bundle, resources)
+- ✅ Permissions configured (dialog, fs, core)
+- ✅ Directory structure created (components, store, services, types, utils)
+- ✅ Dependencies installed (konva, react-konva, zustand, uuid)
+- ✅ TailwindCSS configured (v4 via CSS import)
+- ⏳ Type definitions not yet created
+- ⏳ Stores not yet implemented
+- ⏳ Components not yet implemented
+- ⏳ Rust backend commands not yet implemented
 
 ### Key Files to Reference
 - `_docs/architecture.md` - Complete system specification
