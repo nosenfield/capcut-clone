@@ -5,18 +5,43 @@
 
 import React from 'react';
 import { useMediaStore } from '../../store/mediaStore';
+import { useTimelineStore } from '../../store/timelineStore';
 import { videoService } from '../../services/videoService';
 import { MediaFile } from '../../types/media';
+import { v4 as uuidv4 } from 'uuid';
 
 export const MediaLibrary: React.FC = () => {
   const { files, selectedFileId, addMediaFile, removeMediaFile, selectMediaFile } = useMediaStore();
+  const { tracks, addClip, removeClip } = useTimelineStore();
   const [isImporting, setIsImporting] = React.useState(false);
   
   const handleImport = async () => {
     setIsImporting(true);
     try {
       const importedFiles = await videoService.importVideos();
-      importedFiles.forEach(file => addMediaFile(file));
+      
+      // Add files to media library and create timeline clips
+      importedFiles.forEach(file => {
+        addMediaFile(file);
+        
+        // Automatically add clip to timeline (to the first track at the end)
+        if (tracks.length > 0) {
+          const firstTrack = tracks[0];
+          const lastClip = firstTrack.clips[firstTrack.clips.length - 1];
+          const startTime = lastClip ? lastClip.startTime + lastClip.duration : 0;
+          
+          addClip({
+            id: uuidv4(),
+            mediaFileId: file.id,
+            trackId: firstTrack.id,
+            startTime: startTime,
+            duration: file.duration,
+            trimStart: 0,
+            trimEnd: 0,
+            layer: 0
+          });
+        }
+      });
     } catch (error) {
       console.error('Import failed:', error);
       alert('Failed to import videos');
@@ -41,6 +66,16 @@ export const MediaLibrary: React.FC = () => {
     
     if (shouldRemove) {
       console.log('Removing media file:', id);
+      
+      // Find and remove all clips using this media file
+      tracks.forEach(track => {
+        track.clips.forEach(clip => {
+          if (clip.mediaFileId === id) {
+            removeClip(clip.id);
+          }
+        });
+      });
+      
       removeMediaFile(id);
     } else {
       console.log('User cancelled removal');
@@ -60,23 +95,23 @@ export const MediaLibrary: React.FC = () => {
   return (
     <div className="media-library h-full flex flex-col bg-gray-900 text-white">
       <div className="p-4 border-b border-gray-700">
+        <h2 className="text-lg font-bold text-red-500 mb-4">MEDIA LIBRARY</h2>
         <button
           onClick={handleImport}
           disabled={isImporting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded transition-colors"
+          className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
         >
-          {isImporting ? 'Importing...' : 'Import Videos'}
+          {isImporting ? 'Importing...' : '+Add Clip'}
         </button>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-2">
         {files.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
-            <p className="text-lg mb-2">No media files imported</p>
-            <p className="text-sm">Click "Import Videos" to get started</p>
+          <div className="text-center text-gray-500 mt-8 text-sm">
+            <p>No media files</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-2">
             {files.map(file => (
               <MediaCard
                 key={file.id}
@@ -131,32 +166,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
     <div
       onClick={handleCardClick}
       className={`
-        media-card cursor-pointer rounded-lg overflow-hidden
-        border-2 transition-all
-        ${isSelected ? 'border-blue-500 bg-gray-800' : 'border-gray-700 bg-gray-850 hover:border-gray-600'}
+        media-card cursor-pointer overflow-hidden
+        transition-all bg-black text-white
+        ${isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-gray-900'}
       `}
     >
-      <div className="aspect-video bg-gray-950 relative">
-        <img
-          src={file.thumbnailUrl}
-          alt={file.name}
-          className="w-full h-full object-cover"
-        />
-        <button
-          onClick={onRemove}
-          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs transition-colors z-10"
-          aria-label="Remove media file"
-        >
-          Remove
-        </button>
-      </div>
-      
-      <div className="p-3">
-        <p className="font-medium text-sm truncate" title={file.name}>{file.name}</p>
-        <div className="flex gap-3 mt-2 text-xs text-gray-400">
-          <span>{formatDuration(file.duration)}</span>
-          <span>{formatResolution(file.width, file.height)}</span>
-          <span>{file.fps.toFixed(0)} fps</span>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex-1 font-medium text-sm truncate" title={file.name}>
+          {file.name}
+        </div>
+        <div className="text-xs text-gray-400">
+          {(file.fileSize / (1024 * 1024)).toFixed(1)}MB
         </div>
       </div>
     </div>
