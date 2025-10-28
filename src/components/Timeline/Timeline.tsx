@@ -60,12 +60,13 @@ export const Timeline: React.FC = () => {
   const handleTimelineClick = (e: any) => {
     const target = e.target;
     
-    // Always seek when clicking on timeline - check target name to avoid conflicts with clips
+    // Only seek when clicking in time ruler area - check target name to avoid conflicts with clips
     const targetName = target.name();
     if (!targetName || targetName === 'background') {
       const stage = e.target.getStage();
       const pointerPos = stage.getPointerPosition();
-      if (pointerPos) {
+      // Only seek if click is in the time ruler area (top 30px), not in track area
+      if (pointerPos && pointerPos.y <= TIME_RULER_HEIGHT) {
         const newPosition = pointerPos.x / zoom;
         setPlayheadPosition(Math.max(0, newPosition));
       }
