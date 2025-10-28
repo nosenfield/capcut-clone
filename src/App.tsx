@@ -8,14 +8,14 @@ function App() {
   return (
     <div className="app-container h-screen flex flex-col bg-gray-800">
       {/* Top Row - Media Library and Preview Panel */}
-      <div className="flex-1 flex flex-row overflow-hidden" style={{ display: 'flex', minHeight: 0 }}>
+      <div className="flex-1 flex flex-row overflow-hidden">
         {/* Media Library - Left */}
-        <div id="media-library-panel" className="border-r border-gray-700" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
+        <div id="media-library-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
           <MediaLibrary />
         </div>
         
         {/* Preview Panel - Right */}
-        <div id="preview-panel" className="flex-1 flex flex-col relative" style={{ minWidth: 0 }}>
+        <div id="preview-panel" className="flex-1 flex flex-col relative">
           {/* Preview Panel Label */}
           <div className="absolute top-0 right-0 z-10 p-4">
             <h2 className="text-lg font-bold text-red-500 writing-mode-vertical transform rotate-0" style={{ writingMode: 'vertical-rl' }}>
@@ -31,14 +31,14 @@ function App() {
       </div>
       
       {/* Bottom Row - Layer Panel and Timeline Panel */}
-      <div className="h-64 flex flex-row border-t border-gray-700" style={{ display: 'flex' }}>
+      <div className="h-64 flex flex-row border-t border-gray-700">
         {/* Layer Panel - Left */}
-        <div id="layer-panel" className="border-r border-gray-700" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
+        <div id="layer-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
           <LayerPanel />
         </div>
         
         {/* Timeline Panel - Right */}
-        <div id="timeline-panel" className="flex-1 bg-gray-800" style={{ minWidth: 0 }}>
+        <div id="timeline-panel" className="flex-1 bg-gray-800">
           <div className="p-2 border-b border-gray-700">
             <h2 className="text-lg font-bold text-red-500 text-center">TIMELINE PANEL</h2>
           </div>
