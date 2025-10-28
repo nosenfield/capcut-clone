@@ -27,7 +27,9 @@ export const MediaLibrary: React.FC = () => {
   
   const handleRemove = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Remove this media file?')) {
+    e.preventDefault();
+    const shouldRemove = window.confirm('Remove this media file?');
+    if (shouldRemove) {
       removeMediaFile(id);
     }
   };
