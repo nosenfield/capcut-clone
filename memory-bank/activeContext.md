@@ -1,25 +1,35 @@
 # Active Context - CapCut Clone Video Editor
 
 **Last Updated**: 2025-01-27  
-**Current Phase**: Phase 5.1 Complete (Video Preview Player)  
+**Current Phase**: Phase 6 Complete (Basic Editing)  
 **Session Type**: Development
 
 ## Current Work Focus
 
-**Primary Objective**: Video preview player with HTML5 video playback implemented.
+**Primary Objective**: Phase 6 (Basic Editing) fully implemented with clip selection and trim controls.
 
-Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlayer implemented. Video preview now plays actual video content using blob URLs. Tailwind CSS v4 configuration fixed.
+Phases 1-6 complete. Timeline editing now includes clip selection (with visual feedback), keyboard delete support, and trim handles for adjusting clip start/end points. All timeline interactions are working smoothly with proper constraints.
 
 ## Recent Changes
 
 ### Latest Session (2025-01-27)
-- **Task 5.1 Complete**: Implemented video preview player with HTML5 video element
-  - Replaced thumbnail placeholder with actual video playback
-  - Implemented blob URL loading using Tauri FS plugin
-  - Added playhead synchronization with requestAnimationFrame
-  - Video playback controlled by Timeline component
-  - Playback respects clip position and trim settings
-  - Fixed FFmpeg binary permissions issue
+- **Task 6.2 Complete**: Implemented basic trim controls for clips
+  - Added orange trim handles (8px wide) on left/right edges of selected clips
+  - Left handle adjusts trimStart and updates clip position
+  - Right handle adjusts trimEnd and clip duration
+  - Implemented trim constraints (minimum 0.1s duration, can't exceed media duration)
+  - Trim handles and clip name move with clip during drag
+  - Fixed vertical position constraint for trim handles
+- **Task 6.1 Complete**: Implemented clip selection on timeline
+  - Added selectedClipId to timeline store with selectClip action
+  - Clicking clip selects it with visual distinction (brighter blue, thicker border, enhanced shadow)
+  - Clicking empty timeline space deselects
+  - Delete/Backspace key removes selected clip
+  - Only one clip selected at a time
+- **Additional Improvements**: 
+  - Prevented vertical dragging of clips (horizontal only)
+  - Added delete button (×) to media library cards
+  - Automatic cleanup of timeline clips when media is deleted
 - **Task 4.1 Complete**: Created Timeline canvas component with Konva.js
   - Time ruler with second/minute markers
   - Draggable clip rectangles with labels
@@ -91,13 +101,17 @@ Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlaye
 11. ✅ **Task 4.2**: Auto-add clips to timeline (complete)
 12. ✅ **Task 4.3**: Basic clip dragging (complete)
 
-**Phase 5.1 Complete:**
+**Phase 5 Complete:**
 13. ✅ **Task 5.1**: Create preview player component with video playback (complete)
 14. ✅ **Task 5.2**: Sync preview with timeline playhead (complete)
 
+**Phase 6 Complete:**
+15. ✅ **Task 6.1**: Implement clip selection (complete)
+16. ✅ **Task 6.2**: Implement basic trim controls (complete)
+
 **Next Phase:**
-15. ⏳ **Task 6.1**: Implement clip selection (next)
-16. ⏳ **Task 6.2**: Implement basic trim controls
+17. ⏳ **Task 7.1**: Create export dialog UI (next)
+18. ⏳ **Task 7.2**: Implement export video functionality
 
 ## Active Decisions & Considerations
 
@@ -121,10 +135,10 @@ Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlaye
 ## Context for AI Assistant
 
 ### Project State
-- **Status**: Phases 1-4 Complete, Ready for Phase 5 (Video Preview)
-- **Completed**: Foundation, backend, media import, timeline editor
-- **In Progress**: Preview player placeholder (shows thumbnails)
-- **Next**: Video playback with HTML5 video element
+- **Status**: Phases 1-6 Complete, Ready for Phase 7 (Export)
+- **Completed**: Foundation, backend, media import, timeline editor, video preview, basic editing
+- **In Progress**: None - ready for export functionality
+- **Next**: Export dialog UI and video export implementation
 
 ### Current Code State
 The project foundation and media import features are complete:
@@ -142,12 +156,14 @@ The project foundation and media import features are complete:
 - ✅ Rust FFmpeg executor implemented
 - ✅ Tauri IPC commands implemented
 - ✅ VideoService implemented
-- ✅ MediaLibrary component implemented
-- ✅ Timeline component implemented (Konva canvas)
+- ✅ MediaLibrary component implemented with delete functionality
+- ✅ Timeline component implemented (Konva canvas with selection and trimming)
 - ✅ LayerPanel component implemented
-- ✅ PreviewPlayer placeholder implemented (thumbnail display)
+- ✅ PreviewPlayer implemented with HTML5 video playback
+- ✅ Clip selection and deletion working
+- ✅ Trim controls implemented (left/right handles)
+- ✅ Vertical drag constraint prevents clips from changing tracks
 - ✅ Tailwind CSS v4 fully configured and working
-- ⏳ Video playback not yet implemented
 
 ### Key Files to Reference
 - `_docs/architecture.md` - Complete system specification
@@ -177,15 +193,20 @@ When continuing work on this project:
 - **Plugin System**: Must install and initialize plugins in both `Cargo.toml` and `lib.rs`
 - **Flex Layout**: Use `min-h-0` and `min-w-0` to allow flex items to shrink
 - **Build Status**: Project builds and runs successfully
+- **Konva Group Dragging**: Make the Group draggable, not individual elements - children position relative to Group (0,0)
+- **Konva dragBoundFunc**: Returns absolute stage coordinates, not relative to parent Group
+- **Konva Text Positioning**: Use `listening={false}` to prevent text from interfering with click events
 
 ## Communication Points
 
 ### Current Session Goals
 - ✅ Project intelligence (.cursor/rules) established
-- ✅ Phases 1-4 complete (foundation, backend, media import, timeline)
-- ✅ Media import and library working
+- ✅ Phases 1-6 complete (foundation, backend, media import, timeline, preview, editing)
+- ✅ Media import and library working with delete functionality
 - ✅ Timeline canvas with Konva.js working
+- ✅ Clip selection, deletion, and trimming working
+- ✅ Video preview with playback and synchronization
 - ✅ UI layout matches reference design
 - ✅ Tailwind CSS v4 fully configured and working
 - ✅ App builds and runs successfully
-- ⏳ Ready to begin Phase 5 (Video Preview)
+- ⏳ Ready to begin Phase 7 (Export Functionality)
