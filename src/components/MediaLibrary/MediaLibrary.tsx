@@ -93,10 +93,11 @@ export const MediaLibrary: React.FC = () => {
   };
   
   return (
-    <div className="media-library h-full flex flex-col bg-gray-900 text-white">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-bold text-red-500 mb-4">MEDIA LIBRARY</h2>
+    <div data-name="media-library-container" className="media-library h-full flex flex-col bg-gray-900 text-white">
+      <div data-name="media-library-header" className="p-4 border-b border-gray-700">
+        <h2 data-name="media-library-title" className="text-lg font-bold text-red-500 mb-4">MEDIA LIBRARY</h2>
         <button
+          data-name="media-library-import-button"
           onClick={handleImport}
           disabled={isImporting}
           className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
@@ -105,7 +106,7 @@ export const MediaLibrary: React.FC = () => {
         </button>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-2">
+      <div data-name="media-library-content" className="flex-1 overflow-y-auto p-2">
         {files.length === 0 ? (
           <div className="text-center text-gray-500 mt-8 text-sm">
             <p>No media files</p>
@@ -143,9 +144,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   file,
   isSelected,
   onSelect,
-  onRemove,
-  formatDuration,
-  formatResolution
+  onRemove
 }) => {
   const handleCardClick = (e: React.MouseEvent) => {
     console.log('handleCardClick called');
@@ -164,6 +163,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   
   return (
     <div
+      data-name={`media-card-${file.id}`}
       onClick={handleCardClick}
       className={`
         media-card cursor-pointer overflow-hidden
@@ -171,14 +171,15 @@ const MediaCard: React.FC<MediaCardProps> = ({
         ${isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-gray-900'}
       `}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <div className="flex-1 font-medium text-sm truncate" title={file.name}>
+      <div data-name="media-card-content" className="flex items-center gap-2 px-3 py-2">
+        <div data-name="media-card-name" className="flex-1 font-medium text-sm truncate" title={file.name}>
           {file.name}
         </div>
-        <div className="text-xs text-gray-400">
+        <div data-name="media-card-size" className="text-xs text-gray-400">
           {(file.fileSize / (1024 * 1024)).toFixed(1)}MB
         </div>
         <button
+          data-name={`media-card-remove-button-${file.id}`}
           onClick={onRemove}
           className="text-red-500 hover:text-red-600 transition-colors text-lg font-bold"
           title="Delete clip"

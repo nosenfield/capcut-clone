@@ -106,30 +106,49 @@ export const PreviewPlayer: React.FC = () => {
     }
     
     let animationFrameId: number;
+    let lastFrameTime = Date.now();
     
     const updatePlayhead = () => {
-      if (!videoRef.current || !currentClip) return;
+      const now = Date.now();
+      const delta = (now - lastFrameTime) / 1000; // delta in seconds
+      lastFrameTime = now;
       
-      // Calculate timeline position from video time
-      const actualVideoTime = videoRef.current.currentTime;
-      const timelineTime = currentClip.startTime + (actualVideoTime - currentClip.trimStart);
+      // Get current playhead position from store
+      const currentPos = useTimelineStore.getState().playheadPosition;
+      const newPosition = currentPos + delta;
       
-      // Update playhead
-      setPlayheadPosition(timelineTime);
-      
-      // Check if we've reached the end of the clip or timeline
-      if (timelineTime >= currentClip.startTime + currentClip.duration || timelineTime >= duration) {
+      // Stop if reached end of timeline
+      if (newPosition >= duration) {
+        setPlayheadPosition(duration);
         setIsPlaying(false);
-        if (videoRef.current) {
+        if (videoRef.current && !videoRef.current.paused) {
           videoRef.current.pause();
         }
-      } else {
-        animationFrameId = requestAnimationFrame(updatePlayhead);
+        return;
       }
+      
+      // Update playhead position
+      setPlayheadPosition(newPosition);
+      
+      // If there's a clip at this position, sync video
+      if (currentClip && videoRef.current) {
+        const actualVideoTime = currentClip.trimStart + (newPosition - currentClip.startTime);
+        videoRef.current.currentTime = actualVideoTime;
+        
+        // Continue playback if paused (shouldn't happen but just in case)
+        if (videoRef.current.paused) {
+          videoRef.current.play().catch(err => {
+            console.error('Error playing video:', err);
+            setIsPlaying(false);
+          });
+        }
+      }
+      
+      animationFrameId = requestAnimationFrame(updatePlayhead);
     };
     
     // Start playing video when isPlaying is true
-    if (videoRef.current && videoRef.current.paused) {
+    if (currentClip && videoRef.current && videoRef.current.paused) {
       videoRef.current.play().catch(err => {
         console.error('Error playing video:', err);
         setIsPlaying(false);

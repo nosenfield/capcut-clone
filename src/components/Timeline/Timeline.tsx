@@ -20,7 +20,7 @@ export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
   
-  const { tracks, playheadPosition, zoom, duration, selectedClipId, selectClip, removeClip } = useTimelineStore();
+  const { tracks, playheadPosition, zoom, duration, selectedClipId, selectClip, removeClip, setPlayheadPosition } = useTimelineStore();
   
   // Update stage width on resize
   useEffect(() => {
@@ -54,12 +54,25 @@ export const Timeline: React.FC = () => {
     return time * zoom;
   };
   
-  // Convert x position to time
-  const xToTime = (x: number): number => {
-    return x / zoom;
-  };
-  
   const calculatedWidth = Math.max(stageWidth, timeToX(duration || 0));
+  
+  // Handle timeline click for seeking
+  const handleTimelineClick = (e: any) => {
+    const target = e.target;
+    
+    // Always seek when clicking on timeline - check target name to avoid conflicts with clips
+    const targetName = target.name();
+    if (!targetName || targetName === 'background') {
+      const stage = e.target.getStage();
+      const pointerPos = stage.getPointerPosition();
+      if (pointerPos) {
+        const newPosition = pointerPos.x / zoom;
+        setPlayheadPosition(Math.max(0, newPosition));
+      }
+    }
+    
+    selectClip(null);
+  };
   
   return (
     <div ref={containerRef} className="timeline-container h-full flex flex-col bg-gray-900">
@@ -67,14 +80,15 @@ export const Timeline: React.FC = () => {
       
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
         <Stage width={calculatedWidth} height={TIMELINE_HEIGHT}>
-          <Layer onClick={() => selectClip(null)}>
-            {/* Background */}
+          <Layer onClick={handleTimelineClick}>
+            {/* Background - name for click detection */}
             <Rect
               x={0}
               y={0}
               width={calculatedWidth}
               height={TIMELINE_HEIGHT}
               fill="#1a1a1a"
+              name="background"
             />
             
             {/* Time ruler */}
@@ -121,7 +135,7 @@ interface TimeRulerProps {
 }
 
 const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth, height }) => {
-  const ticks: JSX.Element[] = [];
+  const ticks: React.ReactNode[] = [];
   const interval = zoom < 20 ? 5 : zoom < 50 ? 2 : 1; // Seconds between ticks
   
   for (let t = 0; t <= Math.max(duration, 10); t += interval) {
@@ -148,7 +162,7 @@ const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth, heigh
   }
   
   // Small ticks for every second
-  const smallTicks: JSX.Element[] = [];
+  const smallTicks: React.ReactNode[] = [];
   for (let t = 0; t <= Math.max(duration, 10) && zoom > 30; t++) {
     const x = t * zoom;
     if (x > stageWidth + 200) break;
@@ -290,35 +304,57 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
   const strokeWidth = isSelected ? 2.5 : 1.5;
   
   // Trim handle handlers
+  // Use ref to track the Group to prevent it from moving during trim
+  const clipGroupRef = React.useRef<any>(null);
+  
   const handleLeftTrimDrag = (e: any) => {
+    // Stop event propagation to prevent Group from being affected
+    e.cancelBubble = true;
+    e.evt?.stopPropagation();
+    
     const deltaX = e.target.x() / zoom;
     const newTrimStart = Math.max(0, Math.min(clip.trimStart + deltaX, (mediaFile?.duration || 0) - clip.trimEnd - 0.1));
     const actualDelta = newTrimStart - clip.trimStart;
     const newDuration = clip.duration - actualDelta;
-    const newStartTime = clip.startTime - actualDelta;
+    // Advance startTime to keep clip visually in same position on timeline
+    const newStartTime = clip.startTime + actualDelta;
     
+    // Update all three values to keep clip visually stable
     if (newDuration >= 0.1 && newStartTime >= 0) {
       updateClip(clip.id, { trimStart: newTrimStart, duration: newDuration, startTime: newStartTime });
     }
+    
+    // Reset handle to starting position
     e.target.x(0);
   };
   
   const handleRightTrimDrag = (e: any) => {
-    const newWidth = e.target.x() - 0;
-    const newDuration = newWidth / zoom;
+    // Stop event propagation to prevent Group from being affected
+    e.cancelBubble = true;
+    e.evt?.stopPropagation();
+    
+    const currentPos = e.target.x();
+    const deltaX = currentPos - (width - 8);
+    const deltaTime = deltaX / zoom;
+    const newDuration = clip.duration + deltaTime;
     const maxDuration = (mediaFile?.duration || 0) - clip.trimStart - clip.trimEnd;
     const constrainedDuration = Math.max(0.1, Math.min(newDuration, maxDuration));
     const actualDelta = constrainedDuration - clip.duration;
     const newTrimEnd = Math.max(0, clip.trimEnd - actualDelta);
     
+    // CRITICAL: Only update duration and trimEnd, NOT startTime
     if (constrainedDuration >= 0.1) {
       updateClip(clip.id, { duration: constrainedDuration, trimEnd: newTrimEnd });
     }
-    e.target.x(width - 8);
+    
+    // Reset handle to correct position based on new duration
+    e.target.x(constrainedDuration * zoom - 8);
   };
   
   return (
     <Group 
+      name={`clip-group-${clip.id}`}
+      ref={clipGroupRef}
       x={x}
       y={y}
       onClick={handleClick}
@@ -401,25 +437,42 @@ interface PlayheadProps {
 
 const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight }) => {
   const x = position * zoom;
+  const { setPlayheadPosition } = useTimelineStore();
+  
+  const handleDragEnd = (e: any) => {
+    const newX = e.target.x();
+    const newPosition = newX / zoom;
+    setPlayheadPosition(Math.max(0, newPosition));
+    
+    // Reset position after update
+    e.target.x(0);
+  };
   
   return (
-    <>
-      {/* Playhead line */}
+    <Group
+      name="playhead-group"
+      x={0}
+      y={rulerHeight - 8}
+      draggable
+      dragBoundFunc={(pos) => ({ x: pos.x, y: rulerHeight - 8 })}
+      onDragEnd={handleDragEnd}
+    >
+      {/* Playhead triangle on ruler - interactive */}
       <Line
-        points={[x, rulerHeight, x, height]}
-        stroke="#ff4444"
-        strokeWidth={2}
-        listening={false}
-      />
-      
-      {/* Playhead triangle on ruler */}
-      <Line
-        points={[x, rulerHeight, x - 6, rulerHeight - 8, x + 6, rulerHeight - 8, x, rulerHeight]}
+        name="playhead-triangle"
+        points={[x, 8, x - 6, 0, x + 6, 0, x, 8]}
         fill="#ff4444"
         closed={true}
-        listening={false}
       />
-    </>
+      
+      {/* Playhead line - interactive */}
+      <Line
+        name="playhead-line"
+        points={[x, 8, x, height - rulerHeight + 8]}
+        stroke="#ff4444"
+        strokeWidth={2}
+      />
+    </Group>
   );
 };
 
@@ -427,21 +480,23 @@ const TimelineControls: React.FC = () => {
   const { zoom, setZoom, playheadPosition, isPlaying, setIsPlaying, duration } = useTimelineStore();
   
   return (
-    <div className="timeline-controls flex items-center gap-4 p-3 bg-gray-800 border-b border-gray-700">
+    <div data-name="timeline-controls" className="timeline-controls flex items-center gap-4 p-3 bg-gray-800 border-b border-gray-700">
       <button
+        data-name="timeline-play-pause-button"
         onClick={() => setIsPlaying(!isPlaying)}
         className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
       >
         {isPlaying ? '⏸ Pause' : '▶ Play'}
       </button>
       
-      <span className="text-white text-sm font-mono min-w-[120px]">
+      <span data-name="timeline-duration-display" className="text-white text-sm font-mono min-w-[120px]">
         {playheadPosition.toFixed(2)}s / {duration.toFixed(2)}s
       </span>
       
-      <div className="flex items-center gap-2">
-        <span className="text-white text-sm">Zoom:</span>
+      <div data-name="timeline-zoom-controls" className="flex items-center gap-2">
+        <span data-name="timeline-zoom-label" className="text-white text-sm">Zoom:</span>
         <input
+          data-name="timeline-zoom-slider"
           type="range"
           min="10"
           max="200"
@@ -449,7 +504,7 @@ const TimelineControls: React.FC = () => {
           onChange={(e) => setZoom(Number(e.target.value))}
           className="w-32"
         />
-        <span className="text-white text-sm font-mono min-w-[60px]">{zoom}px/s</span>
+        <span data-name="timeline-zoom-value" className="text-white text-sm font-mono min-w-[60px]">{zoom}px/s</span>
       </div>
     </div>
   );
