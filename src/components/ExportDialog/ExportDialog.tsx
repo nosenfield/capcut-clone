@@ -5,7 +5,7 @@
  * Shows export settings (resolution, fps) and progress.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { useTimelineStore } from '../../store/timelineStore';
 import { useMediaStore } from '../../store/mediaStore';
@@ -24,6 +24,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) =
   
   const [resolution, setResolution] = useState<'720p' | '1080p' | 'source'>('1080p');
   const [fps, setFps] = useState(30);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
   
   const handleExport = async () => {
     // Open save dialog
@@ -74,18 +84,34 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) =
         return;
       }
       
-      // TODO: Implement progress tracking
-      // For now, just show indeterminate progress
-      setExportProgress(50);
+      // Simulate progress with animation (since we can't parse FFmpeg output easily)
+      let currentProgress = 0;
+      progressIntervalRef.current = setInterval(() => {
+        currentProgress += Math.random() * 10; // Increase by 0-10%
+        if (currentProgress > 90) currentProgress = 90; // Cap at 90% until completion
+        setExportProgress(currentProgress);
+      }, 300); // Update every 300ms
       
       await videoService.exportVideo(allClips, outputPath, resolution, fps);
       
+      // Clean up interval and set to 100%
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setExportProgress(100);
       alert('Export completed successfully!');
       onClose();
       
     } catch (error) {
       console.error('Export failed:', error);
+      
+      // Clean up interval on error
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      
       alert(`Export failed: ${error}`);
     } finally {
       setIsExporting(false);
@@ -109,7 +135,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) =
                 style={{ width: `${exportProgress}%` }}
               />
             </div>
-            <p className="text-sm text-gray-400">{exportProgress}%</p>
+            <p className="text-sm text-gray-400">{Math.round(exportProgress)}%</p>
           </div>
         ) : (
           <>
