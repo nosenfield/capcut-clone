@@ -236,6 +236,14 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
   const x = timeToX(clip.startTime);
   const width = clip.duration * zoom;
   
+  // Constrain drag to horizontal movement only (prevent vertical movement)
+  const dragBoundFunc = (pos: { x: number; y: number }) => {
+    return {
+      x: pos.x,
+      y: y // Lock y position to prevent vertical dragging
+    };
+  };
+  
   const handleDragEnd = (e: any) => {
     const newX = e.target.x();
     const newStartTime = newX / zoom;
@@ -263,6 +271,7 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
         strokeWidth={1.5}
         cornerRadius={3}
         draggable
+        dragBoundFunc={dragBoundFunc}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
         shadowColor="black"
