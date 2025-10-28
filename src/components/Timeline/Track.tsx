@@ -17,13 +17,14 @@ export interface TrackProps {
   trackHeight: number;
   selectedClipId: string | null;
   onSelectClip: (clipId: string | null) => void;
+  leftPadding?: number;
 }
 
-export const Track: React.FC<TrackProps> = ({ track, y, zoom, timeToX, trackHeight, selectedClipId, onSelectClip }) => {
+export const Track: React.FC<TrackProps> = ({ track, y, zoom, timeToX, trackHeight, selectedClipId, onSelectClip, leftPadding = 0 }) => {
   return (
     <>
       <Rect
-        x={0}
+        x={leftPadding}
         y={y}
         width={10000}
         height={trackHeight}
@@ -33,7 +34,7 @@ export const Track: React.FC<TrackProps> = ({ track, y, zoom, timeToX, trackHeig
       />
       
       <Rect
-        x={0}
+        x={leftPadding}
         y={y}
         width={120}
         height={trackHeight}
@@ -42,7 +43,7 @@ export const Track: React.FC<TrackProps> = ({ track, y, zoom, timeToX, trackHeig
         strokeWidth={1}
       />
       <Text
-        x={8}
+        x={leftPadding + 8}
         y={y + 18}
         text={track.name}
         fontSize={12}
@@ -60,6 +61,7 @@ export const Track: React.FC<TrackProps> = ({ track, y, zoom, timeToX, trackHeig
           height={trackHeight - 4}
           isSelected={clip.id === selectedClipId}
           onSelect={onSelectClip}
+          leftPadding={leftPadding}
         />
       ))}
     </>

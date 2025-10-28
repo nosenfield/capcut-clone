@@ -68,8 +68,8 @@ export const Timeline: React.FC = () => {
       const pointerPos = stage?.getPointerPosition();
       
       if (pointerPos && pointerPos.y <= TIMELINE_CONSTANTS.TIME_RULER_HEIGHT) {
-        const newPosition = pointerPos.x / zoom;
-        setPlayheadPosition(Math.max(0, newPosition));
+        const newPosition = (pointerPos.x - 20) / zoom;
+        setPlayheadPosition(Math.max(0, Math.min(compositionLength, newPosition)));
       }
     }
     
@@ -81,10 +81,10 @@ export const Timeline: React.FC = () => {
       <TimelineControls />
       
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <Stage width={calculatedWidth} height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}>
+        <Stage width={calculatedWidth + 20} height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}>
           <Layer onClick={handleTimelineClick}>
             <Rect
-              x={0}
+              x={20}
               y={0}
               width={calculatedWidth}
               height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}
@@ -97,6 +97,9 @@ export const Timeline: React.FC = () => {
               duration={compositionLength} 
               stageWidth={stageWidth}
               height={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT}
+              compositionLength={compositionLength}
+              onSeek={setPlayheadPosition}
+              leftPadding={20}
             />
             
             {tracks.map((track, index) => (
@@ -109,6 +112,7 @@ export const Timeline: React.FC = () => {
                 trackHeight={TIMELINE_CONSTANTS.TRACK_HEIGHT}
                 selectedClipId={selectedClipId}
                 onSelectClip={selectClip}
+                leftPadding={20}
               />
             ))}
             
@@ -117,6 +121,7 @@ export const Timeline: React.FC = () => {
               zoom={zoom} 
               height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}
               rulerHeight={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT}
+              leftPadding={20}
             />
           </Layer>
         </Stage>
