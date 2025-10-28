@@ -274,7 +274,7 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
     setIsDragging(false);
     
     // Reset position (store update will re-render)
-    e.target.x(x);
+    e.target.x(0);
   };
   
   const handleClick = (e: any) => {
@@ -291,7 +291,7 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
   
   // Trim handle handlers
   const handleLeftTrimDrag = (e: any) => {
-    const deltaX = (e.target.x() - x) / zoom;
+    const deltaX = e.target.x() / zoom;
     const newTrimStart = Math.max(0, Math.min(clip.trimStart + deltaX, (mediaFile?.duration || 0) - clip.trimEnd - 0.1));
     const actualDelta = newTrimStart - clip.trimStart;
     const newDuration = clip.duration - actualDelta;
@@ -300,11 +300,11 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
     if (newDuration >= 0.1 && newStartTime >= 0) {
       updateClip(clip.id, { trimStart: newTrimStart, duration: newDuration, startTime: newStartTime });
     }
-    e.target.x(x);
+    e.target.x(0);
   };
   
   const handleRightTrimDrag = (e: any) => {
-    const newWidth = e.target.x() - x;
+    const newWidth = e.target.x() - 0;
     const newDuration = newWidth / zoom;
     const maxDuration = (mediaFile?.duration || 0) - clip.trimStart - clip.trimEnd;
     const constrainedDuration = Math.max(0.1, Math.min(newDuration, maxDuration));
@@ -314,24 +314,28 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
     if (constrainedDuration >= 0.1) {
       updateClip(clip.id, { duration: constrainedDuration, trimEnd: newTrimEnd });
     }
-    e.target.x(x + width);
+    e.target.x(width - 8);
   };
   
   return (
-    <Group onClick={handleClick}>
+    <Group 
+      x={x}
+      y={y}
+      onClick={handleClick}
+      draggable
+      dragBoundFunc={dragBoundFunc}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={handleDragEnd}
+    >
       <Rect
-        x={x}
-        y={y}
+        x={0}
+        y={0}
         width={width}
         height={height}
         fill={fillColor}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
         cornerRadius={3}
-        draggable
-        dragBoundFunc={dragBoundFunc}
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={handleDragEnd}
         shadowColor={isSelected ? "#60a5fa" : "black"}
         shadowBlur={isSelected ? 12 : 8}
         shadowOpacity={isSelected ? 0.4 : 0.2}
@@ -342,8 +346,8 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
         <>
           {/* Left trim handle */}
           <Rect
-            x={x}
-            y={y}
+            x={0}
+            y={0}
             width={8}
             height={height}
             fill="#ff6b35"
@@ -356,8 +360,8 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
           
           {/* Right trim handle */}
           <Rect
-            x={x + width - 8}
-            y={y}
+            x={width - 8}
+            y={0}
             width={8}
             height={height}
             fill="#ff6b35"
@@ -373,8 +377,8 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
       {/* Clip label */}
       {width > 40 && (
         <Text
-          x={x + 6}
-          y={y + 8}
+          x={6}
+          y={8}
           text={mediaFile?.name || 'Unknown'}
           fontSize={11}
           fill="#fff"
