@@ -25,12 +25,25 @@ export const MediaLibrary: React.FC = () => {
     }
   };
   
-  const handleRemove = (id: string, e: React.MouseEvent) => {
+  const handleRemove = async (id: string, e: React.MouseEvent) => {
+    console.log('handleRemove called', id);
     e.stopPropagation();
     e.preventDefault();
-    const shouldRemove = window.confirm('Remove this media file?');
+    
+    // Use async confirm with Tauri's message API
+    const { confirm: tauriConfirm } = await import('@tauri-apps/plugin-dialog');
+    const shouldRemove = await tauriConfirm('Remove this media file?', {
+      title: 'Confirm Removal',
+      kind: 'warning'
+    });
+    
+    console.log('User confirmed:', shouldRemove);
+    
     if (shouldRemove) {
+      console.log('Removing media file:', id);
       removeMediaFile(id);
+    } else {
+      console.log('User cancelled removal');
     }
   };
   
@@ -99,9 +112,24 @@ const MediaCard: React.FC<MediaCardProps> = ({
   formatDuration,
   formatResolution
 }) => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    console.log('handleCardClick called');
+    console.log('Event target:', e.target);
+    // Don't select if clicking the remove button
+    const target = e.target as HTMLElement;
+    const isButton = target.closest('button');
+    console.log('Is button:', isButton);
+    if (isButton) {
+      console.log('Ignoring card selection - clicked button');
+      return;
+    }
+    console.log('Selecting card');
+    onSelect();
+  };
+  
   return (
     <div
-      onClick={onSelect}
+      onClick={handleCardClick}
       className={`
         media-card cursor-pointer rounded-lg overflow-hidden
         border-2 transition-all
@@ -116,7 +144,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
         />
         <button
           onClick={onRemove}
-          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs transition-colors"
+          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs transition-colors z-10"
           aria-label="Remove media file"
         >
           Remove
