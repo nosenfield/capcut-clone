@@ -16,13 +16,6 @@ function App() {
         
         {/* Preview Panel - Right */}
         <div id="preview-panel" className="flex-1 flex flex-col relative">
-          {/* Preview Panel Label */}
-          <div className="absolute top-0 right-0 z-10 p-4">
-            <h2 className="text-lg font-bold text-red-500 writing-mode-vertical transform rotate-0" style={{ writingMode: 'vertical-rl' }}>
-              PREVIEW PANEL
-            </h2>
-          </div>
-          
           {/* Preview Player */}
           <div className="flex-1 bg-black overflow-hidden">
             <PreviewPlayer />
@@ -38,11 +31,11 @@ function App() {
         </div>
         
         {/* Timeline Panel - Right */}
-        <div id="timeline-panel" className="flex-1 bg-gray-800">
-          <div className="p-2 border-b border-gray-700">
+        <div id="timeline-panel" className="flex-1 bg-gray-800 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+          <div className="p-2 border-b border-gray-700 flex-shrink-0">
             <h2 className="text-lg font-bold text-red-500 text-center">TIMELINE PANEL</h2>
           </div>
-          <div className="h-56">
+          <div className="h-56 flex-1 min-h-0 overflow-hidden">
             <Timeline />
           </div>
         </div>

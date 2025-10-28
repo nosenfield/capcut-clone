@@ -31,17 +31,23 @@ export const PreviewPlayer: React.FC = () => {
   }, [currentClip, files]);
   
   return (
-    <div className="preview-player h-full flex flex-col bg-black">
-      <div className="flex-1 flex items-center justify-center p-8">
+    <div className="preview-player h-full w-full flex flex-col bg-black overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0 min-w-0">
         {currentMedia ? (
-          <div className="text-center">
-            <img
-              src={currentMedia.thumbnailUrl}
-              alt={currentMedia.name}
-              className="max-w-full max-h-full mx-auto rounded"
-              style={{ maxHeight: '80vh' }}
-            />
-            <p className="text-gray-400 text-sm mt-4">{currentMedia.name}</p>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <div className="w-full h-full flex items-center justify-center">
+              <img
+                src={currentMedia.thumbnailUrl}
+                alt={currentMedia.name}
+                className="w-auto h-auto max-w-full max-h-full object-contain"
+                style={{ 
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  aspectRatio: `${currentMedia.width} / ${currentMedia.height}`,
+                }}
+              />
+            </div>
+            <p className="text-gray-400 text-sm flex-shrink-0">{currentMedia.name}</p>
           </div>
         ) : (
           <div className="text-gray-500 text-center">
