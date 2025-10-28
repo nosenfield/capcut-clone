@@ -1,8 +1,8 @@
 # Progress - CapCut Clone Video Editor
 
 **Last Updated**: 2025-01-27  
-**Project Phase**: Phase 5.1 Complete, Ready for Phase 6  
-**Overall Completion**: ~55% (Phases 1-5.1 Complete, Phase 6 Next)
+**Project Phase**: Phase 6 Complete, Ready for Phase 7  
+**Overall Completion**: ~65% (Phases 1-6 Complete, Phase 7 Next)
 
 ## Implementation Status
 
@@ -39,13 +39,13 @@
 - ✅ Task 4.2: Implement add clip to timeline (Complete)
 - ✅ Task 4.3: Implement clip dragging on timeline (Complete)
 
-#### Phase 5: Video Preview (50% Complete)
+#### Phase 5: Video Preview (100%)
 - ✅ Task 5.1: Create preview player component (Complete)
 - ✅ Task 5.2: Sync preview with timeline playhead (Complete)
 
-#### Phase 6: Basic Editing
-- ⏳ Task 6.1: Implement clip selection
-- ⏳ Task 6.2: Implement basic trim controls
+#### Phase 6: Basic Editing (100%)
+- ✅ Task 6.1: Implement clip selection (Complete)
+- ✅ Task 6.2: Implement basic trim controls (Complete)
 
 #### Phase 7: Export Functionality
 - ⏳ Task 7.1: Create export dialog UI
