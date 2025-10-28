@@ -271,7 +271,6 @@ impl FFmpegExecutor {
                 );
                 filters.push(gap_filter);
                 video_indices.push(format!("[gap{}]", i));
-                current_time = clip.start_time;
             }
             
             // Add the actual clip

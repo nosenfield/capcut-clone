@@ -1,16 +1,19 @@
 import "./App.css";
 import { useState } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { MediaLibrary } from "./components/MediaLibrary/MediaLibrary";
 import { Timeline } from "./components/Timeline/Timeline";
 import { PreviewPlayer } from "./components/Preview/PreviewPlayer";
 import { LayerPanel } from "./components/Timeline/LayerPanel";
 import { ExportDialog } from "./components/ExportDialog/ExportDialog";
+import { Toast } from "./components/Toast/Toast";
 
 function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
   return (
-    <div className="app-container h-screen flex flex-col bg-gray-800">
+    <ErrorBoundary>
+      <div className="app-container h-screen flex flex-col bg-gray-800">
       {/* Top Row - Media Library and Preview Panel */}
       <div className="flex-1 flex flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* Media Library - Left */}
@@ -45,7 +48,11 @@ function App() {
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
       />
-    </div>
+      
+      {/* Toast Notifications */}
+      <Toast />
+      </div>
+    </ErrorBoundary>
   );
 }
 
