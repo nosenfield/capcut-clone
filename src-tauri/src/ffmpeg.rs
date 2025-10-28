@@ -184,14 +184,15 @@ impl FFmpegExecutor {
         clips: &[ClipInfo],
         output_path: &str,
         resolution: &str,
-        fps: u32
+        fps: u32,
+        composition_length: f64
     ) -> Result<(), String> {
         if clips.is_empty() {
             return Err("No clips to export".to_string());
         }
         
         // Create FFmpeg filter complex for concatenation and trimming
-        let filter_complex = self.build_filter_complex(clips, resolution)?;
+        let filter_complex = self.build_filter_complex(clips, resolution, fps, composition_length)?;
         
         let mut args = vec![
             "-y".to_string(), // Overwrite output
@@ -235,11 +236,13 @@ impl FFmpegExecutor {
         Ok(())
     }
     
-    /// Build FFmpeg filter complex for concatenation
+    /// Build FFmpeg filter complex for concatenation with gap handling
     fn build_filter_complex(
         &self,
         clips: &[ClipInfo],
-        resolution: &str
+        resolution: &str,
+        fps: u32,
+        composition_length: f64
     ) -> Result<String, String> {
         let scale = match resolution {
             "720p" => "1280:720",
@@ -249,11 +252,31 @@ impl FFmpegExecutor {
         };
         
         let mut filters = Vec::new();
+        let mut video_indices = Vec::new();
+        let mut current_time = 0.0;
         
-        // Trim and scale each input
+        // Build segments with gaps
         for (i, clip) in clips.iter().enumerate() {
+            // Check if there's a gap before this clip
+            if clip.start_time > current_time {
+                let gap_duration = clip.start_time - current_time;
+                
+                // Create a black gap segment
+                let gap_filter = format!(
+                    "color=c=black:s=1920x1080:d={}:r={},scale={}[gap{}]",
+                    gap_duration,
+                    fps,
+                    scale,
+                    i
+                );
+                filters.push(gap_filter);
+                video_indices.push(format!("[gap{}]", i));
+                current_time = clip.start_time;
+            }
+            
+            // Add the actual clip
             let trim_filter = format!(
-                "[{}:v]trim=start={}:duration={},setpts=PTS-STARTPTS,scale={}[v{}]",
+                "[{}:v]trim=start={}:duration={},setpts=PTS-STARTPTS,scale={}[clip{}]",
                 i,
                 clip.trim_start,
                 clip.duration,
@@ -261,18 +284,34 @@ impl FFmpegExecutor {
                 i
             );
             filters.push(trim_filter);
+            video_indices.push(format!("[clip{}]", i));
+            
+            current_time = clip.start_time + clip.duration;
         }
         
-        // Concatenate all clips
-        let concat_inputs: String = (0..clips.len())
-            .map(|i| format!("[v{}]", i))
-            .collect::<Vec<_>>()
-            .join("");
+        // Add gap to fill to composition length if needed
+        if current_time < composition_length {
+            let gap_duration = composition_length - current_time;
+            let gap_index = clips.len();
+            
+            let gap_filter = format!(
+                "color=c=black:s=1920x1080:d={}:r={},scale={}[gap{}]",
+                gap_duration,
+                fps,
+                scale,
+                gap_index
+            );
+            filters.push(gap_filter);
+            video_indices.push(format!("[gap{}]", gap_index));
+        }
+        
+        // Concatenate all segments (gaps + clips + end gap)
+        let concat_inputs: String = video_indices.join("");
         
         filters.push(format!(
             "{}concat=n={}:v=1:a=0[outv]",
             concat_inputs,
-            clips.len()
+            video_indices.len()
         ));
         
         Ok(filters.join(";"))

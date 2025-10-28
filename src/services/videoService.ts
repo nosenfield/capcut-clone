@@ -113,14 +113,16 @@ export class VideoService {
     }>,
     outputPath: string,
     resolution: '720p' | '1080p' | 'source',
-    fps: number
+    fps: number,
+    compositionLength: number
   ): Promise<void> {
     try {
       await invoke('export_video', {
         clips,
         outputPath,
         resolution,
-        fps
+        fps,
+        compositionLength
       });
     } catch (error) {
       handleError(error, 'VideoService.exportVideo');

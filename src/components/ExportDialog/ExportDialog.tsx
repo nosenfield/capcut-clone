@@ -92,7 +92,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) =
         setExportProgress(currentProgress);
       }, 300); // Update every 300ms
       
-      await videoService.exportVideo(allClips, outputPath, resolution, fps);
+      await videoService.exportVideo(allClips, outputPath, resolution, fps, compositionLength);
       
       // Clean up interval and set to 100%
       if (progressIntervalRef.current) {

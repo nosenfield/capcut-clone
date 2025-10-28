@@ -54,11 +54,12 @@ pub async fn export_video(
     clips: Vec<ClipInfo>,
     output_path: String,
     resolution: String,
-    fps: u32
+    fps: u32,
+    composition_length: f64
 ) -> Result<(), String> {
     let executor = FFmpegExecutor::new()?;
     
     // Convert Vec to slice for method call
-    executor.export_video(&clips, &output_path, &resolution, fps)
+    executor.export_video(&clips, &output_path, &resolution, fps, composition_length)
 }
 
