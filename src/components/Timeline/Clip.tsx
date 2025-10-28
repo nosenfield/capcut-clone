@@ -70,6 +70,7 @@ export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSe
     }
     
     e.target.x(0);
+    setIsDragging(false);
   };
   
   const handleRightTrimDrag = (e: any) => {
@@ -90,6 +91,7 @@ export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSe
     }
     
     e.target.x(constrainedDuration * zoom - TIMELINE_CONSTANTS.TRIM_HANDLE_WIDTH);
+    setIsDragging(false);
   };
   
   return (
@@ -129,7 +131,12 @@ export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSe
             strokeWidth={1}
             draggable
             dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
+            onDragStart={(e) => { 
+              e.cancelBubble = true; 
+              setIsDragging(true);
+            }}
             onDragEnd={handleLeftTrimDrag}
+            onClick={(e) => { e.cancelBubble = true; }}
           />
           <Rect
             x={width - TIMELINE_CONSTANTS.TRIM_HANDLE_WIDTH}
@@ -141,7 +148,12 @@ export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSe
             strokeWidth={1}
             draggable
             dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
+            onDragStart={(e) => { 
+              e.cancelBubble = true; 
+              setIsDragging(true);
+            }}
             onDragEnd={handleRightTrimDrag}
+            onClick={(e) => { e.cancelBubble = true; }}
           />
         </>
       )}
