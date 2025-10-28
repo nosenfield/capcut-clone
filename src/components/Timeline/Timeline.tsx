@@ -441,12 +441,22 @@ const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight
   const { setPlayheadPosition } = useTimelineStore();
   
   const handleDragEnd = (e: any) => {
-    const newX = e.target.x();
-    const newPosition = newX / zoom;
-    setPlayheadPosition(Math.max(0, newPosition));
+    // The target could be the Group itself or one of its children (triangle/line)
+    // Get the Group reference
+    const group = e.target.getType() === 'Group' ? e.target : e.target.getParent();
     
-    // Reset position after update
-    e.target.x(0);
+    if (!group) return;
+    
+    // Get the Group's x offset (how far it was dragged)
+    const dragOffset = group.x();
+    // Calculate the new absolute position on the timeline
+    const newPosition = Math.max(0, (x + dragOffset) / zoom);
+    
+    // Update the playhead position in the store
+    setPlayheadPosition(newPosition);
+    
+    // Reset the Group's x offset since children positions are relative to Group
+    group.x(0);
   };
   
   return (
