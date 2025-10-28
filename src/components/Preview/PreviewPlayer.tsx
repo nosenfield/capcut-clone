@@ -36,18 +36,30 @@ export const PreviewPlayer: React.FC = () => {
   // State for video source URL and blob URL
   const [videoSrc, setVideoSrc] = React.useState<string | null>(null);
   const blobUrlRef = React.useRef<string | null>(null);
+  const lastMediaPathRef = React.useRef<string | null>(null);
   
   // Create blob URL from file when media changes
   React.useEffect(() => {
     if (!currentMedia?.path) {
-      // Cleanup old blob URL
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-      }
+      // No media (gap) - keep existing blob URL but don't show video
       setVideoSrc(null);
       return;
     }
+    
+    // Don't reload if we already loaded this media path
+    if (lastMediaPathRef.current === currentMedia.path) {
+      // Same media - just set the video source if we have a blob URL
+      if (blobUrlRef.current) {
+        setVideoSrc(blobUrlRef.current);
+      }
+      return;
+    }
+    
+    // Update tracked path
+    lastMediaPathRef.current = currentMedia.path;
+    
+    // Store old blob URL before loading new one
+    const oldBlobUrl = blobUrlRef.current;
     
     // Try to read file as blob
     const loadVideo = async () => {
@@ -59,6 +71,14 @@ export const PreviewPlayer: React.FC = () => {
         blobUrlRef.current = blobUrl;
         console.log('Created blob URL:', blobUrl);
         setVideoSrc(blobUrl);
+        
+        // Revoke old blob URL after a short delay to let video load new source
+        if (oldBlobUrl) {
+          setTimeout(() => {
+            console.log('Revoking old blob URL:', oldBlobUrl);
+            URL.revokeObjectURL(oldBlobUrl);
+          }, 1000); // 1 second delay to ensure video has loaded new source
+        }
       } catch (error) {
         console.error('Failed to read video file:', error);
         // Fallback to convertFileSrc
@@ -70,19 +90,33 @@ export const PreviewPlayer: React.FC = () => {
           console.error('convertFileSrc also failed:', e);
           setVideoSrc(null);
         }
+        
+        // Revoke old blob URL if we're using fallback
+        if (oldBlobUrl) {
+          URL.revokeObjectURL(oldBlobUrl);
+        }
       }
     };
     
     loadVideo();
     
-    // Cleanup blob URL on unmount or media change
+    // Don't revoke in cleanup - let the loading function handle it with delay
+    // Only cleanup on final unmount
+    return () => {
+      // This cleanup only runs on unmount, not on media change
+      // Media changes are handled by the loadVideo async function
+    };
+  }, [currentMedia?.path]);
+  
+  // Cleanup blob URL on component unmount
+  React.useEffect(() => {
     return () => {
       if (blobUrlRef.current) {
         URL.revokeObjectURL(blobUrlRef.current);
         blobUrlRef.current = null;
       }
     };
-  }, [currentMedia?.path]);
+  }, []);
   
   // Calculate video time considering clip position and trim settings
   const videoTime = React.useMemo(() => {
