@@ -1,18 +1,39 @@
 # Active Context - CapCut Clone Video Editor
 
-**Last Updated**: 2025-01-27  
-**Current Phase**: Phase 3 Complete, Ready for Phase 4  
+**Last Updated**: 2025-10-27  
+**Current Phase**: Phase 4 Complete (Timeline Editor)  
 **Session Type**: Development
 
 ## Current Work Focus
 
-**Primary Objective**: Media import and library functionality complete. Ready to begin Phase 4 (Timeline Editor).
+**Primary Objective**: Timeline editor and UI layout complete. Tailwind CSS v4 configuration fixed.
 
-Phases 1, 2, and 3 complete. All backend FFmpeg integration, IPC commands, video service, and Media Library component implemented and working.
+Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlayer placeholder all implemented. Critical Tailwind CSS v4 configuration issue resolved.
 
 ## Recent Changes
 
-### Latest Session
+### Latest Session (2025-10-27)
+- **Task 4.1 Complete**: Created Timeline canvas component with Konva.js
+  - Time ruler with second/minute markers
+  - Draggable clip rectangles with labels
+  - Red playhead with triangle indicator
+  - Zoom controls (10-200 px/s)
+  - Track backgrounds with left label panel
+- **Created LayerPanel Component**: Shows all clips on timeline
+- **Created PreviewPlayer Placeholder**: Displays thumbnail at playhead position
+- **Fixed Critical Tailwind CSS v4 Issue**: 
+  - Discovered empty `src/tailwindcss` file blocking imports
+  - Installed missing `@tailwindcss/vite` plugin
+  - Added tailwindcss() to vite.config.ts
+  - Tailwind now working correctly
+- **Updated App Layout**: Matches reference design with 4 panels
+  - Media Library (top-left) and Preview (top-right)
+  - Layer Panel (bottom-left) and Timeline (bottom-right)
+  - Fixed flex layout overflow issues
+  - Preview panel respects aspect ratio and fits container
+- **Auto-add clips to timeline**: Importing videos automatically adds clips
+
+### Previous Session
 - **Task 3.2 Complete**: Built Media Library component with full video import UI
   - Created `src/components/MediaLibrary/MediaLibrary.tsx`
   - MediaCard sub-component with thumbnails and metadata
@@ -58,13 +79,14 @@ Phases 1, 2, and 3 complete. All backend FFmpeg integration, IPC commands, video
 8. ✅ **Task 3.1**: Create video service (complete)
 9. ✅ **Task 3.2**: Build media library component (complete)
 
+**Phase 4 Complete:**
+10. ✅ **Task 4.1**: Create timeline canvas component (complete)
+11. ✅ **Task 4.2**: Auto-add clips to timeline (complete)
+12. ✅ **Task 4.3**: Basic clip dragging (complete)
+
 **Next Phase:**
-10. ⏳ **Task 4.1**: Create timeline canvas component (next)
-    - Create `src/components/Timeline/Timeline.tsx`
-    - Implement Konva Stage with tracks and clips
-    - Time ruler with second markers
-    - Playhead indicator
-    - Zoom controls
+13. ⏳ **Task 5.1**: Create preview player component with video playback (next)
+14. ⏳ **Task 5.2**: Sync preview with timeline playhead
 
 ## Active Decisions & Considerations
 
@@ -75,6 +97,9 @@ Phases 1, 2, and 3 complete. All backend FFmpeg integration, IPC commands, video
 4. **Tauri v2 Permissions**: Using capabilities-based security model in `capabilities/default.json`
 5. **Window Size**: 1280x800 default, 1024x600 minimum for video editing UI
 6. **Bundle Target**: macOS only (dmg) for MVP
+7. **Tailwind CSS v4**: Requires @tailwindcss/vite plugin (not PostCSS plugin)
+8. **Layout Structure**: 4-panel design with flex-based responsive sizing
+9. **Timeline Width**: 320px fixed for Media Library and Layer Panel
 
 ### Open Questions
 - None currently - memory bank setup is straightforward
@@ -85,10 +110,10 @@ Phases 1, 2, and 3 complete. All backend FFmpeg integration, IPC commands, video
 ## Context for AI Assistant
 
 ### Project State
-- **Status**: Phases 1-3 Complete, Ready for Phase 4 (Timeline Editor)
-- **Completed**: Foundation, backend, media import
-- **In Progress**: Timeline component development
-- **Next**: Timeline canvas with Konva
+- **Status**: Phases 1-4 Complete, Ready for Phase 5 (Video Preview)
+- **Completed**: Foundation, backend, media import, timeline editor
+- **In Progress**: Preview player placeholder (shows thumbnails)
+- **Next**: Video playback with HTML5 video element
 
 ### Current Code State
 The project foundation and media import features are complete:
@@ -107,8 +132,11 @@ The project foundation and media import features are complete:
 - ✅ Tauri IPC commands implemented
 - ✅ VideoService implemented
 - ✅ MediaLibrary component implemented
-- ⏳ Timeline component not yet implemented
-- ⏳ Preview player not yet implemented
+- ✅ Timeline component implemented (Konva canvas)
+- ✅ LayerPanel component implemented
+- ✅ PreviewPlayer placeholder implemented (thumbnail display)
+- ✅ Tailwind CSS v4 fully configured and working
+- ⏳ Video playback not yet implemented
 
 ### Key Files to Reference
 - `_docs/architecture.md` - Complete system specification
@@ -131,16 +159,22 @@ When continuing work on this project:
 - Clear separation between MVP and full product features
 - Modular design enables incremental development
 - Tauri provides clean IPC boundary between React frontend and Rust backend
-- **TailwindCSS v4**: Uses `@import "tailwindcss"` in CSS files instead of requiring PostCSS plugin
+- **TailwindCSS v4**: Requires `@tailwindcss/vite` plugin, not PostCSS plugin
+- **TailwindCSS v4 Import**: Uses `@import "tailwindcss"` in CSS files
+- **Empty File Bug**: Empty `src/tailwindcss` file blocked Tailwind imports (deleted)
 - **Tauri v2 Permissions**: Uses capabilities-based model in `capabilities/default.json` (not permission arrays)
 - **Plugin System**: Must install and initialize plugins in both `Cargo.toml` and `lib.rs`
-- **Build Status**: Project now builds successfully with `cargo build`
+- **Flex Layout**: Use `min-h-0` and `min-w-0` to allow flex items to shrink
+- **Build Status**: Project builds and runs successfully
 
 ## Communication Points
 
 ### Current Session Goals
 - ✅ Project intelligence (.cursor/rules) established
-- ✅ Phases 1-3 complete (foundation, backend, media import)
+- ✅ Phases 1-4 complete (foundation, backend, media import, timeline)
 - ✅ Media import and library working
+- ✅ Timeline canvas with Konva.js working
+- ✅ UI layout matches reference design
+- ✅ Tailwind CSS v4 fully configured and working
 - ✅ App builds and runs successfully
-- ⏳ Ready to begin Phase 4 (Timeline Editor)
+- ⏳ Ready to begin Phase 5 (Video Preview)
