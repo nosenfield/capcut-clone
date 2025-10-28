@@ -1,0 +1,200 @@
+Description: TailwindCSS v4 configuration patterns
+Globs: **/*.css, **/*.tsx, tailwind.config.js, postcss.config.js
+
+# TailwindCSS v4 Patterns
+
+## Critical Configuration
+
+TailwindCSS v4 uses a **completely different** import pattern than v3.
+
+### CSS Import Method
+
+**File**: `src/App.css` (or main CSS file)
+
+**v4 Pattern** (CORRECT):
+```css
+@import "tailwindcss";
+```
+
+**v3 Pattern** (DEPRECATED):
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### PostCSS Configuration
+
+**File**: `postcss.config.js`
+
+**v4 Pattern** (CORRECT):
+```js
+export default {
+  plugins: {
+    autoprefixer: {},  // Only autoprefixer needed
+  },
+};
+```
+
+**v3 Pattern** (DEPRECATED):
+```js
+export default {
+  plugins: {
+    tailwindcss: {},    // ❌ No longer needed
+    autoprefixer: {},
+  },
+};
+```
+
+**Root Cause**: TailwindCSS v4 is imported directly via CSS `@import` statement, not as a PostCSS plugin.
+
+## Common Errors
+
+### Error Message
+```
+[postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin.
+The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS 
+with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+```
+
+### Solution
+**Remove** `tailwindcss: {}` from `postcss.config.js` plugins object.
+
+### Files to Check
+1. `postcss.config.js` - Should NOT have `tailwindcss` plugin
+2. Main CSS file - Should have `@import "tailwindcss";`
+3. `tailwind.config.js` - Optional, for custom configuration
+
+## Dark Mode Theme
+
+**Pattern used in this project**:
+```typescript
+// App.tsx
+<div className="bg-gray-950">  // Dark background
+
+// Components
+className="bg-gray-900 text-white"           // Dark card
+className="border-gray-700"                   // Dark borders
+className="text-gray-400"                     // Muted text
+className="bg-blue-600 hover:bg-blue-700"    // Buttons
+```
+
+**Color Palette**:
+- `gray-950` - App background (darkest)
+- `gray-900` - Component backgrounds
+- `gray-850` - Card hover states (custom)
+- `gray-800` - Selected items
+- `gray-700` - Borders
+- `gray-600` - Disabled states
+- `gray-400` - Secondary text
+- `blue-600` - Primary buttons
+- `red-600` - Destructive actions
+
+## Layout Patterns
+
+### Full Height Layouts
+```typescript
+className="h-full flex flex-col"
+```
+
+### Scrollable Content
+```typescript
+className="flex-1 overflow-y-auto"
+```
+
+### Grid Patterns
+```typescript
+// Single column grid
+className="grid grid-cols-1 gap-4"
+
+// Media cards
+className="grid grid-cols-1 gap-4"
+```
+
+### Flex Patterns
+```typescript
+// Centered content
+className="flex items-center justify-center"
+
+// Spaced items
+className="flex gap-3"
+```
+
+## Component Patterns
+
+### Card Components
+```typescript
+className="rounded-lg overflow-hidden border-2 transition-all"
+```
+
+### Buttons
+```typescript
+className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded transition-colors"
+```
+
+### Modal Overlays
+```typescript
+className="absolute inset-0 bg-black bg-opacity-50"
+```
+
+## Responsive Patterns
+
+**Current MVP**: Fixed size (no responsive design needed)
+- Window size: 1280x800 default
+- Minimum: 1024x600
+
+## Transitions
+
+```typescript
+// Standard transitions
+className="transition-all"
+className="transition-colors"
+
+// Hover states
+className="hover:bg-blue-700"
+className="hover:border-gray-600"
+```
+
+## Spacing Conventions
+
+- **p-4** - Standard padding
+- **gap-3** - Small gaps between items
+- **gap-4** - Medium gaps (grid)
+- **mt-8** - Section spacing
+- **mb-2** - Tight spacing
+
+## Text Sizing
+
+```typescript
+className="text-sm"      // Small text (metadata)
+className="text-xs"      // Extra small (labels)
+className="text-lg"      // Large (headings)
+```
+
+## Truncation
+
+```typescript
+className="truncate"                    // Ellipsis on overflow
+className="text-ellipsis overflow-hidden whitespace-nowrap"
+```
+
+## Aspect Ratios
+
+```typescript
+className="aspect-video"  // 16:9 video aspect ratio
+```
+
+## Verification
+
+**Check configuration is correct**:
+1. Main CSS file has `@import "tailwindcss";`
+2. `postcss.config.js` does NOT have `tailwindcss` plugin
+3. `npm run build` succeeds without TailwindCSS errors
+4. Tailwind classes apply correctly in dev mode
+
+## Migration Notes
+
+- **v3 → v4**: Change `@tailwind` directives to `@import "tailwindcss";`
+- **PostCSS**: Remove `tailwindcss: {}` plugin
+- **Config**: `tailwind.config.js` format unchanged
+- **Utilities**: All existing utility classes still work

@@ -1,0 +1,177 @@
+Description: FFmpeg integration patterns and best practices
+Globs: src-tauri/src/ffmpeg.rs, src-tauri/src/commands.rs
+
+# FFmpeg Integration Patterns
+
+## Core FFmpeg Architecture
+
+### FFmpegExecutor Pattern
+All FFmpeg operations go through `FFmpegExecutor` struct:
+- Wraps binary path resolution
+- Provides consistent error handling
+- Returns `Result<T, String>` for all operations
+
+**Location**: `src-tauri/src/ffmpeg.rs`
+
+### Key Methods
+
+**1. Metadata Extraction**
+```rust
+pub fn get_metadata(&self, file_path: &str) -> Result<MediaMetadata, String>
+```
+- Uses FFprobe with `-v quiet -print_format json`
+- Parses video stream info
+- Returns duration, resolution, FPS, codec, bitrate
+
+**2. Thumbnail Generation**
+```rust
+pub fn generate_thumbnail(&self, file_path: &str, timestamp: f64, output_path: &str) -> Result<(), String>
+```
+- Extracts single frame with `-vframes 1`
+- High quality setting `-q:v 2`
+- Recommended timestamp: 10% of duration
+
+**3. Video Export**
+```rust
+pub fn export_video(&self, clips: &[ClipInfo], output_path: &str, resolution: &str, fps: u32) -> Result<(), String>
+```
+- Builds filter complex for concatenation
+- Handles trim, scale, and concat operations
+- Output: H.264, CRF 23, medium preset
+
+### Filter Complex Construction
+
+Multi-clip export requires filter complex:
+1. **Trim each clip**: `trim=start=X:duration=Y`
+2. **Scale to target resolution** (if not "source")
+3. **Reset PTS**: `setpts=PTS-STARTPTS`
+4. **Concat**: `concat=n=X:v=1:a=0`
+
+**Pattern**:
+```rust
+fn build_filter_complex(&self, clips: &[ClipInfo], resolution: &str) -> String {
+    // Generate trim filters
+    let trim_filters: Vec<String> = clips.iter().enumerate()
+        .map(|(i, clip)| {
+            format!("[{}]trim=start={}:duration={},setpts=PTS-STARTPTS[clip{}]",
+                    i, clip.trim_start, clip.duration, i)
+        })
+        .collect();
+    
+    // Generate scale filters (if needed)
+    // ... scale logic
+    
+    // Generate concat filter
+    let concat_inputs: Vec<String> = (0..clips.len())
+        .map(|i| format!("[clip{}]", i))
+        .collect();
+    let concat = format!("{}concat=n={}:v=1:a=0[out]",
+                         concat_inputs.join(""), clips.len());
+    
+    trim_filters.join(";") + ";" + &concat
+}
+```
+
+### FPS Parsing
+
+FFmpeg can report FPS in multiple formats:
+- Decimal: `"30"`
+- Fractional: `"30000/1001"` (29.97 fps)
+
+**Pattern**:
+```rust
+fn parse_fps(&self, fps_str: &str) -> Result<f64, String> {
+    if fps_str.contains('/') {
+        // Parse fractional FPS
+        let parts: Vec<&str> = fps_str.split('/').collect();
+        if parts.len() != 2 {
+            return Err(format!("Invalid FPS format: {}", fps_str));
+        }
+        let numerator: f64 = parts[0].parse()
+            .map_err(|_| format!("Invalid numerator: {}", parts[0]))?;
+        let denominator: f64 = parts[1].parse()
+            .map_err(|_| format!("Invalid denominator: {}", parts[1]))?;
+        Ok(numerator / denominator)
+    } else {
+        // Parse decimal FPS
+        fps_str.parse()
+            .map_err(|_| format!("Invalid FPS: {}", fps_str))
+    }
+}
+```
+
+### Error Handling Pattern
+
+**Always include stderr in error messages**:
+```rust
+let output = Command::new(&self.ffmpeg_path)
+    .args(&args)
+    .output()
+    .map_err(|e| format!("Failed to execute FFmpeg: {}", e))?;
+
+if !output.status.success() {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    return Err(format!("FFmpeg error: {}", stderr));
+}
+```
+
+### Tauri Command Integration
+
+Commands must create executor instance:
+```rust
+#[tauri::command]
+pub async fn get_media_metadata(file_path: String) -> Result<MediaMetadata, String> {
+    let executor = FFmpegExecutor::new()?;
+    executor.get_metadata(&file_path)
+}
+```
+
+**Thumbnail Generation** - Returns base64:
+```rust
+#[tauri::command]
+pub async fn generate_thumbnail(file_path: String, timestamp: f64) -> Result<String, String> {
+    let executor = FFmpegExecutor::new()?;
+    // Generate to temp file
+    // Read and encode to base64
+    // Clean up temp file
+    Ok(base64_string)
+}
+```
+
+## Known Gotchas
+
+### Binary Permissions
+FFmpeg binaries must have execute permission (555):
+```bash
+chmod 555 src-tauri/binaries/ffmpeg
+chmod 555 src-tauri/binaries/ffprobe
+```
+
+### Temp File Cleanup
+Always clean up temp files in commands:
+```rust
+let _ = fs::remove_file(temp_path); // Ignores errors
+```
+
+### Resource Bundle
+Production builds require binaries in `tauri.conf.json` resources array.
+
+### FPS Calculation
+For timeline calculations, always use actual FPS from metadata:
+- Timeline duration = number of frames / FPS
+- Frame position = time * FPS
+
+## Performance Considerations
+
+1. **Thumbnail generation** is blocking - use async wrapper for UI
+2. **Export operations** are long-running - implement progress callbacks
+3. **Filter complex** construction can be expensive for many clips
+4. **Memory usage** - large videos require careful handling
+
+## Testing FFmpeg Commands
+
+Test commands manually before implementing:
+```bash
+./src-tauri/binaries/ffprobe -v quiet -print_format json input.mp4
+./src-tauri/binaries/ffmpeg -i input.mp4 -vframes 1 -q:v 2 -ss 00:00:01 output.jpg
+```

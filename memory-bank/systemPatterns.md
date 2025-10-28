@@ -366,4 +366,15 @@ src/store/
 - **README** in component directories for complex components
 - **ARCHITECTURE** comments in code for complex logic
 - **TODO** comments with context for future work
+- **.cursor/rules/** - Project intelligence for AI-assisted development
+
+### Cursor Rules Structure
+Project intelligence captured in `.cursor/rules/*.mdc` files:
+- `project-base.mdc` - Core architecture and workflow patterns
+- `tauri-patterns.mdc` - Tauri v2 specific configurations and gotchas
+- `ffmpeg-patterns.mdc` - FFmpeg integration patterns and best practices
+- `zustand-patterns.mdc` - State management patterns and conventions
+- `frontend-service-patterns.mdc` - Service layer patterns for Tauri integration
+- `react-component-patterns.mdc` - React component patterns and best practices
+- `tailwind-v4-patterns.mdc` - TailwindCSS v4 configuration patterns
 

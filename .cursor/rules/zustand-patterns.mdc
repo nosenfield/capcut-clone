@@ -1,0 +1,225 @@
+Description: Zustand state management patterns
+Globs: src/store/**/*.ts
+
+# Zustand State Management Patterns
+
+## Store Structure
+
+All stores follow this consistent pattern:
+
+```typescript
+import { create } from 'zustand';
+import { TypeName } from '../types';
+
+interface StoreState {
+  // State properties
+  data: Type[];
+  selectedId: string | null;
+  
+  // Actions (immutable updates)
+  addItem: (item: Type) => void;
+  removeItem: (id: string) => void;
+  updateItem: (id: string, updates: Partial<Type>) => void;
+  selectItem: (id: string | null) => void;
+  clearAll: () => void;
+}
+
+export const useStore = create<StoreState>((set, get) => ({
+  // Initial state
+  data: [],
+  selectedId: null,
+  
+  // Actions
+  addItem: (item) => set((state) => ({
+    data: [...state.data, item]
+  })),
+  
+  removeItem: (id) => set((state) => ({
+    data: state.data.filter(x => x.id !== id),
+    selectedId: state.selectedId === id ? null : state.selectedId
+  })),
+  
+  updateItem: (id, updates) => set((state) => ({
+    data: state.data.map(x => x.id === id ? { ...x, ...updates } : x)
+  })),
+  
+  selectItem: (id) => set({ selectedId: id }),
+  
+  clearAll: () => set({ data: [], selectedId: null })
+}));
+```
+
+## Store-Specific Patterns
+
+### Media Store
+**Purpose**: Manage imported media files
+**File**: `src/store/mediaStore.ts`
+
+**Key Methods**:
+- `addMediaFile(file)` - Adds file to library
+- `removeMediaFile(id)` - Removes file, deselects if selected
+- `getMediaFile(id)` - Helper to retrieve by ID
+- `selectMediaFile(id)` - Selects a file for editing
+
+**Usage in components**:
+```typescript
+const { files, selectedFileId, addMediaFile, removeMediaFile } = useMediaStore();
+```
+
+### Timeline Store
+**Purpose**: Manage timeline state (tracks, clips, playhead)
+**File**: `src/store/timelineStore.ts`
+
+**Auto-Recalc Pattern**: Duration automatically recalculates when clips change:
+```typescript
+const recalculateDuration = (tracks: TimelineTrack[]): number => {
+  let maxEnd = 0;
+  tracks.forEach(track => {
+    track.clips.forEach(clip => {
+      const clipEnd = clip.startTime + clip.duration;
+      if (clipEnd > maxEnd) maxEnd = clipEnd;
+    });
+  });
+  return maxEnd;
+};
+
+// Used in actions
+removeClip: (clipId) => set((state) => {
+  const updatedTracks = state.tracks.map(track => ({
+    ...track,
+    clips: track.clips.filter(c => c.id !== clipId)
+  }));
+  return {
+    tracks: updatedTracks,
+    duration: recalculateDuration(updatedTracks)
+  };
+})
+```
+
+**Initial State**: Starts with one empty video track
+```typescript
+tracks: [{ id: 'track-1', type: 'video', clips: [] }]
+playheadPosition: 0
+duration: 0
+zoom: 50  // pixels per second
+isPlaying: false
+```
+
+### App Store
+**Purpose**: Application-level state (export, errors)
+**File**: `src/store/appStore.ts`
+
+**Export Progress Pattern**:
+```typescript
+{
+  isExporting: boolean,
+  exportProgress: number,  // 0-100
+  error: string | null
+}
+
+setExportProgress: (progress) => set({ exportProgress: progress })
+```
+
+## Immutability Rules
+
+**Always create new objects** - Never mutate state directly:
+```typescript
+// ❌ BAD
+const { files } = useMediaStore.getState();
+files.push(newFile);  // Direct mutation
+
+// ✅ GOOD
+const addMediaFile = (file: MediaFile) => set((state) => ({
+  files: [...state.files, file]
+}));
+```
+
+**Use spread operator** for updates:
+```typescript
+updateItem: (id, updates) => set((state) => ({
+  data: state.data.map(item => 
+    item.id === id ? { ...item, ...updates } : item
+  )
+}));
+```
+
+**Filter for removal**:
+```typescript
+removeItem: (id) => set((state) => ({
+  data: state.data.filter(x => x.id !== id)
+}));
+```
+
+## Performance Considerations
+
+**Selective Subscriptions**: Only subscribe to needed state:
+```typescript
+// ❌ Subscribes to ALL media state
+const mediaStore = useMediaStore();
+
+// ✅ Only subscribes to files
+const files = useMediaStore(state => state.files);
+```
+
+**Computed Values**: Use get() for one-time reads:
+```typescript
+const getMediaFile = (id: string) => {
+  const state = useMediaStore.getState();
+  return state.files.find(f => f.id === id);
+};
+```
+
+## Integration Points
+
+**Components use stores like this**:
+```typescript
+import { useMediaStore } from '../store/mediaStore';
+
+const MyComponent = () => {
+  const { files, addMediaFile } = useMediaStore();
+  
+  const handleImport = async () => {
+    const file = await importVideo();
+    addMediaFile(file);
+  };
+  
+  return <div>{/* UI */}</div>;
+};
+```
+
+## Common Patterns
+
+### Selection State
+Both MediaStore and Timeline have selection patterns:
+```typescript
+selectedFileId: string | null  // Media selection
+selectedClipId: string | null  // Timeline selection
+```
+
+Selection is always cleared on removal:
+```typescript
+removeItem: (id) => set((state) => ({
+  data: state.data.filter(x => x.id !== id),
+  selectedFileId: state.selectedFileId === id ? null : state.selectedFileId
+}))
+```
+
+### Duration Recalculation
+Timeline duration is computed automatically:
+- Recalculates when clips are added/removed/updated
+- Finds max end time across all tracks
+- Updates duration state
+
+## Type Safety
+
+**Always type store state**:
+```typescript
+interface MediaState {
+  files: MediaFile[];  // NOT any[]
+  selectedFileId: string | null;  // NOT string
+}
+
+export const useMediaStore = create<MediaState>((set) => ({
+  // Fully typed
+}));
+```

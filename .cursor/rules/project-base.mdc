@@ -1,0 +1,70 @@
+Description: Core project setup and architecture patterns
+Globs: **/*.rs, **/*.ts, **/*.tsx
+
+# CapCut Clone - Core Project Rules
+
+## Project Overview
+- **Stack**: Tauri (Rust + React) + TypeScript + Konva.js + FFmpeg + Zustand
+- **Platform**: macOS first, desktop-only MVP
+- **Goal**: Build robust MVP that prioritizes video processing reliability
+
+## Critical Architecture Patterns
+
+### Module-Based Design
+This project follows a strict 11-module architecture:
+- Module 1: Types (complete)
+- Module 2: Zustand Stores (complete)
+- Module 3: Tauri Commands (complete)
+- Module 4: FFmpeg Integration (complete)
+- Module 5: Frontend Services (complete)
+- Modules 6-11: Frontend components (in progress)
+
+**Always reference `_docs/architecture.md` before implementing any module.**
+
+### State Management Pattern
+**Zustand Stores** - Always follow this pattern:
+```typescript
+export const useStore = create<StoreState>((set, get) => ({
+  // Initial state
+  data: [],
+  
+  // Actions (immutable updates)
+  addItem: (item) => set((state) => ({
+    data: [...state.data, item]
+  })),
+  
+  removeItem: (id) => set((state) => ({
+    data: state.data.filter(x => x.id !== id)
+  }))
+}));
+```
+
+### Tauri Command Pattern
+**Rust Commands** - Always follow this pattern:
+```rust
+#[tauri::command]
+pub async fn my_command(param: String) -> Result<DataType, String> {
+    let executor = FFmpegExecutor::new()?;
+    executor.perform_operation(&param)
+}
+```
+
+## Required Files to Read First
+Before ANY code changes, read:
+1. `memory-bank/activeContext.md` - Current work focus
+2. `memory-bank/progress.md` - What's done, what's next
+3. `_docs/architecture.md` - Module specifications
+
+## Code Quality Standards
+- **TypeScript**: Strict mode, no `any`, functional components only
+- **Rust**: All functions return `Result<T, String>`
+- **Error Handling**: Include context in all error messages
+- **Documentation**: JSDoc for public functions, comments for complex logic
+
+## Development Workflow
+1. Read memory bank files
+2. Reference architecture docs for module spec
+3. Follow task list for implementation order
+4. Update progress.md after completing tasks
+5. Update activeContext.md with current focus
+6. Ask before creating context summaries (only for complex/critical work)

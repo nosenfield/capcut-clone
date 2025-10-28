@@ -1,0 +1,188 @@
+Description: Frontend service layer patterns for Tauri integration
+Globs: src/services/**/*.ts
+
+# Frontend Service Layer Patterns
+
+## Service Architecture
+
+Frontend services provide a clean abstraction over Tauri IPC commands. All media operations go through the service layer.
+
+**Location**: `src/services/videoService.ts`
+
+## VideoService Class Pattern
+
+**Singleton Pattern** - Export both class and instance:
+```typescript
+export class VideoService {
+  // Methods here
+}
+
+export const videoService = new VideoService();
+```
+
+## Core Methods
+
+### 1. Import Videos
+```typescript
+async importVideos(): Promise<MediaFile[]>
+```
+- Uses Tauri dialog to open file picker
+- Supports multiple files
+- Filters by video extensions (mp4, mov, webm, avi)
+- Creates MediaFile objects for each imported file
+- Returns empty array if cancelled
+
+**Pattern**:
+```typescript
+const selected = await open({
+  multiple: true,
+  filters: [{
+    name: 'Video',
+    extensions: ['mp4', 'mov', 'webm', 'avi']
+  }]
+});
+
+// Convert to array (single or multiple)
+const paths = Array.isArray(selected) ? selected : [selected];
+```
+
+### 2. Generate Thumbnail
+```typescript
+async generateThumbnail(filePath: string, timestamp: number): Promise<string>
+```
+- Calls backend `generate_thumbnail` command
+- Returns base64 data URL
+- Format: `data:image/jpeg;base64,{base64String}`
+
+**Pattern**:
+```typescript
+const base64Image = await invoke<string>('generate_thumbnail', {
+  filePath,
+  timestamp
+});
+
+return `data:image/jpeg;base64,${base64Image}`;
+```
+
+### 3. Export Video
+```typescript
+async exportVideo(
+  clips: Array<{...}>,
+  outputPath: string,
+  resolution: '720p' | '1080p' | 'source',
+  fps: number
+): Promise<void>
+```
+- Calls backend `export_video` command
+- Passes clips array with trim/start/duration info
+- No return value (errors thrown)
+
+### 4. Create Media File (Private)
+```typescript
+private async createMediaFile(path: string): Promise<MediaFile>
+```
+- Calls `get_media_metadata` for metadata
+- Generates thumbnail at timestamp 0
+- Creates MediaFile object with all metadata
+- Uses UUID for file ID
+
+**Pattern**:
+```typescript
+const metadata = await invoke<MediaMetadata>('get_media_metadata', { filePath: path });
+const thumbnailUrl = await this.generateThumbnail(path, 0);
+
+return {
+  id: uuidv4(),
+  name: fileName,
+  path,
+  type: 'video',
+  duration: metadata.duration,
+  width: metadata.width,
+  height: metadata.height,
+  fps: metadata.fps,
+  fileSize: 0, // TODO: Get from metadata
+  thumbnailUrl,
+  createdAt: new Date()
+};
+```
+
+## Error Handling Pattern
+
+**Always wrap Tauri invocations in try-catch**:
+```typescript
+try {
+  const result = await invoke<ReturnType>('command_name', { params });
+  return result;
+} catch (error) {
+  console.error('Operation failed:', error);
+  throw error; // Let caller handle
+}
+```
+
+**Batch operations should continue on errors**:
+```typescript
+for (const path of paths) {
+  try {
+    const mediaFile = await this.createMediaFile(path);
+    mediaFiles.push(mediaFile);
+  } catch (error) {
+    console.error(`Failed to import ${path}:`, error);
+    // Continue with next file
+  }
+}
+```
+
+## Tauri Invoke Pattern
+
+**Always type the return value**:
+```typescript
+const metadata = await invoke<MediaMetadata>('get_media_metadata', {
+  filePath: path
+});
+```
+
+**Parameter naming**:
+- Use camelCase for Tauri commands (converted to snake_case automatically)
+- Example: `filePath` → `file_path` in Rust
+
+## File Dialog Pattern
+
+**Import dialog configuration**:
+```typescript
+const selected = await open({
+  multiple: true,
+  filters: [{
+    name: 'Video',
+    extensions: ['mp4', 'mov', 'webm', 'avi']
+  }]
+});
+```
+
+**Handle cancellation**:
+```typescript
+if (!selected || (Array.isArray(selected) && selected.length === 0)) {
+  return [];
+}
+```
+
+## Usage in Components
+
+**Import and use singleton**:
+```typescript
+import { videoService } from '../services/videoService';
+
+const { files, addMediaFile } = useMediaStore();
+
+const handleImport = async () => {
+  const importedFiles = await videoService.importVideos();
+  importedFiles.forEach(file => addMediaFile(file));
+};
+```
+
+## Future Enhancements
+
+- Add progress callback support for export operations
+- Implement retry logic for network errors
+- Add caching for generated thumbnails
+- Support audio-only files
+- Add file size from metadata

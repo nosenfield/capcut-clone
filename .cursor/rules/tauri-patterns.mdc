@@ -1,0 +1,111 @@
+Description: Tauri v2 specific patterns and configuration
+Globs: src-tauri/**/*.rs, src-tauri/**/*.toml, src-tauri/**/*.json
+
+# Tauri v2 Integration Patterns
+
+## Critical Tauri v2 Differences
+
+### Permissions System
+**Tauri v2 uses capabilities-based security** - NOT permission arrays.
+
+**File**: `src-tauri/capabilities/default.json`
+```json
+{
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:scope-appdata"
+  ]
+}
+```
+
+**Common Mistakes**:
+- ❌ Using old v1 syntax like `dialog:allow-open`
+- ❌ Adding non-existent permissions like `fs:scope-app-data` (should be `fs:scope-appdata`)
+- ✅ Use `:default` suffix for plugin permissions
+
+### Plugin Initialization
+Plugins must be:
+1. Added to `Cargo.toml` dependencies
+2. Initialized in `lib.rs` with `.plugin()`
+
+**File**: `src-tauri/Cargo.toml`
+```toml
+[dependencies]
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+```
+
+**File**: `src-tauri/src/lib.rs`
+```rust
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        // ... rest of setup
+}
+```
+
+### Binary Path Resolution
+FFmpeg binaries located at `src-tauri/binaries/`
+
+**Development**: Use `CARGO_MANIFEST_DIR` environment variable
+```rust
+let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
+let manifest_path = PathBuf::from(manifest_dir);
+let binaries_dir = manifest_path.join("binaries");
+```
+
+**Production**: Uses Tauri resource directory (configured in `tauri.conf.json`)
+
+### Resources Configuration
+**File**: `src-tauri/tauri.conf.json`
+```json
+{
+  "bundle": {
+    "resources": ["binaries/ffmpeg", "binaries/ffprobe"]
+  }
+}
+```
+
+### IPC Command Pattern
+All commands should:
+- Return `Result<T, String>` (success) or `Result<(), String>` (void)
+- Be marked with `#[tauri::command]`
+- Be async
+- Include descriptive error messages with context
+
+**Example**:
+```rust
+#[tauri::command]
+pub async fn my_command(param: String) -> Result<DataType, String> {
+    let executor = FFmpegExecutor::new()
+        .map_err(|e| format!("Failed to initialize executor: {}", e))?;
+    
+    executor.operation(&param)
+        .map_err(|e| format!("Operation failed: {}", e))
+}
+```
+
+## Common Issues & Solutions
+
+### Build Cache Issues
+If `cargo build` fails with permission errors after config changes:
+```bash
+cd src-tauri
+cargo clean
+cargo build
+```
+
+### Plugin Not Found
+- Check plugin is in `Cargo.toml` dependencies
+- Check plugin is initialized in `lib.rs`
+- Verify capability permissions in `capabilities/default.json`
+
+### Binary Not Found
+- Verify binaries exist at `src-tauri/binaries/`
+- Check `tauri.conf.json` resources array includes binaries
+- Run `cargo clean && cargo build` if recently changed

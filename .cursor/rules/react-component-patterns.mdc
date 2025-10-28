@@ -1,0 +1,236 @@
+Description: React component patterns and best practices
+Globs: src/components/**/*.tsx
+
+# React Component Patterns
+
+## Component Structure
+
+All components follow this pattern:
+```typescript
+import React from 'react';
+import { useStore } from '../store/storeName';
+
+export const ComponentName: React.FC = () => {
+  const [localState, setLocalState] = React.useState<Type>(initialValue);
+  const { storeState, actions } = useStore();
+  
+  const handleAction = (e: React.MouseEvent) => {
+    // Handler logic
+  };
+  
+  return (
+    <div className="component-name">
+      {/* UI */}
+    </div>
+  );
+};
+```
+
+## Hooks Pattern
+
+### State Management
+```typescript
+// Use Zustand stores for global state
+const { files, selectedFileId, addMediaFile, removeMediaFile } = useMediaStore();
+
+// Use useState for local UI state
+const [isImporting, setIsImporting] = React.useState(false);
+```
+
+### Async Operations
+```typescript
+const handleImport = async () => {
+  setIsImporting(true);
+  try {
+    const importedFiles = await videoService.importVideos();
+    importedFiles.forEach(file => addMediaFile(file));
+  } catch (error) {
+    console.error('Import failed:', error);
+    alert('Failed to import videos');
+  } finally {
+    setIsImporting(false);
+  }
+};
+```
+
+## Event Handling
+
+### Click Events
+```typescript
+const handleClick = (e: React.MouseEvent) => {
+  e.stopPropagation(); // Prevent bubbling
+  e.preventDefault();  // Prevent default
+  // Handler logic
+};
+```
+
+### Conditional Rendering
+```typescript
+const handleRemove = async (id: string, e: React.MouseEvent) => {
+  e.stopPropagation();
+  e.preventDefault();
+  
+  // Show confirmation dialog
+  const { confirm } = await import('@tauri-apps/plugin-dialog');
+  const shouldRemove = await confirm('Remove this media file?', {
+    title: 'Confirm Removal',
+    kind: 'warning'
+  });
+  
+  if (shouldRemove) {
+    removeMediaFile(id);
+  }
+};
+```
+
+## Component Composition
+
+### Sub-Components Pattern
+```typescript
+export const ParentComponent: React.FC = () => {
+  const { data } = useStore();
+  
+  return (
+    <div>
+      {data.map(item => (
+        <SubComponent
+          key={item.id}
+          item={item}
+          onAction={handleAction}
+        />
+      ))}
+    </div>
+  );
+};
+
+interface SubComponentProps {
+  item: DataType;
+  onAction: (e: React.MouseEvent) => void;
+}
+
+const SubComponent: React.FC<SubComponentProps> = ({ item, onAction }) => {
+  return (
+    <div onClick={onAction}>
+      {/* UI */}
+    </div>
+  );
+};
+```
+
+### Empty States
+```typescript
+{files.length === 0 ? (
+  <div className="text-center text-gray-500 mt-8">
+    <p className="text-lg mb-2">No media files imported</p>
+    <p className="text-sm">Click "Import Videos" to get started</p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 gap-4">
+    {files.map(file => (
+      <MediaCard key={file.id} file={file} />
+    ))}
+  </div>
+)}
+```
+
+## Event Delegation
+
+**Prevent event bubbling when needed**:
+```typescript
+const handleCardClick = (e: React.MouseEvent) => {
+  const target = e.target as HTMLElement;
+  const isButton = target.closest('button');
+  
+  if (isButton) {
+    return; // Don't select if clicking button
+  }
+  
+  onSelect(); // Select card
+};
+```
+
+## Loading States
+
+```typescript
+const [isImporting, setIsImporting] = React.useState(false);
+
+// In UI
+<button
+  onClick={handleImport}
+  disabled={isImporting}
+  className="disabled:bg-gray-600"
+>
+  {isImporting ? 'Importing...' : 'Import Videos'}
+</button>
+```
+
+## Type Safety
+
+**Always type props**:
+```typescript
+interface ComponentProps {
+  id: string;
+  name: string;
+  onSelect: () => void;
+  onRemove: (e: React.MouseEvent) => void;
+}
+
+const Component: React.FC<ComponentProps> = ({ id, name, onSelect, onRemove }) => {
+  // Implementation
+};
+```
+
+**Always type event handlers**:
+```typescript
+const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  // Handler
+};
+```
+
+## Function Helpers
+
+**Keep formatting functions outside render**:
+```typescript
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatResolution = (width: number, height: number): string => {
+  return `${width}x${height}`;
+};
+
+// Use in render
+<span>{formatDuration(file.duration)}</span>
+```
+
+## Conditional Styling
+
+```typescript
+className={`
+  base-classes
+  ${isSelected ? 'selected-classes' : 'default-classes'}
+`}
+```
+
+**Example**:
+```typescript
+className={`
+  media-card rounded-lg border-2 transition-all
+  ${isSelected ? 'border-blue-500 bg-gray-800' : 'border-gray-700 hover:border-gray-600'}
+`}
+```
+
+## Best Practices
+
+1. **Functional components only** - No class components
+2. **Type props explicitly** - Use interfaces for all props
+3. **Extract sub-components** - Keep main component focused
+4. **Handle loading states** - Provide visual feedback
+5. **Error handling** - Try-catch with user-friendly messages
+6. **Event delegation** - Stop propagation when needed
+7. **Empty states** - Guide users when data is missing
+8. **Keep helpers pure** - Extract formatting functions
+9. **Avoid inline functions** - Define handlers outside render
+10. **Console logging** - Use for debugging complex flows
