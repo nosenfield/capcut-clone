@@ -9,10 +9,13 @@ import { create } from 'zustand';
 import { TimelineState, TimelineClip, TimelineTrack } from '../types/timeline';
 
 interface TimelineStoreState extends TimelineState {
+  selectedClipId: string | null;
+  
   // Actions
   addClip: (clip: TimelineClip) => void;
   removeClip: (clipId: string) => void;
   updateClip: (clipId: string, updates: Partial<TimelineClip>) => void;
+  selectClip: (clipId: string | null) => void;
   setPlayheadPosition: (position: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setZoom: (zoom: number) => void;
@@ -30,6 +33,7 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
   duration: 0,
   zoom: 50, // 50 pixels per second default
   isPlaying: false,
+  selectedClipId: null,
   
   addClip: (clip) => set((state) => {
     const tracks = state.tracks.map(track => 
@@ -57,7 +61,7 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
       0
     );
     
-    return { tracks, duration: maxEnd };
+    return { tracks, duration: maxEnd, selectedClipId: state.selectedClipId === clipId ? null : state.selectedClipId };
   }),
   
   updateClip: (clipId, updates) => set((state) => ({
@@ -68,6 +72,8 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
       )
     }))
   })),
+  
+  selectClip: (clipId) => set({ selectedClipId: clipId }),
   
   setPlayheadPosition: (position) => set({ playheadPosition: position }),
   
@@ -95,7 +101,7 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
     ],
     playheadPosition: 0,
     duration: 0,
-    isPlaying: false
+    isPlaying: false,
+    selectedClipId: null
   })
 }));
-

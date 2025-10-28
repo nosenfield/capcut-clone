@@ -20,7 +20,7 @@ export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
   
-  const { tracks, playheadPosition, zoom, duration } = useTimelineStore();
+  const { tracks, playheadPosition, zoom, duration, selectedClipId, selectClip, removeClip } = useTimelineStore();
   
   // Update stage width on resize
   useEffect(() => {
@@ -34,6 +34,20 @@ export const Timeline: React.FC = () => {
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
+  
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete key removes selected clip
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
+        e.preventDefault();
+        removeClip(selectedClipId);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedClipId, removeClip]);
   
   // Convert time to x position
   const timeToX = (time: number): number => {
@@ -53,7 +67,7 @@ export const Timeline: React.FC = () => {
       
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
         <Stage width={calculatedWidth} height={TIMELINE_HEIGHT}>
-          <Layer>
+          <Layer onClick={() => selectClip(null)}>
             {/* Background */}
             <Rect
               x={0}
@@ -80,6 +94,8 @@ export const Timeline: React.FC = () => {
                 zoom={zoom}
                 timeToX={timeToX}
                 trackHeight={TRACK_HEIGHT}
+                selectedClipId={selectedClipId}
+                onSelectClip={selectClip}
               />
             ))}
             
@@ -164,9 +180,11 @@ interface TrackLayerProps {
   zoom: number;
   timeToX: (time: number) => number;
   trackHeight: number;
+  selectedClipId: string | null;
+  onSelectClip: (clipId: string | null) => void;
 }
 
-const TrackLayer: React.FC<TrackLayerProps> = ({ track, y, zoom, timeToX, trackHeight }) => {
+const TrackLayer: React.FC<TrackLayerProps> = ({ track, y, zoom, timeToX, trackHeight, selectedClipId, onSelectClip }) => {
   const { getMediaFile } = useMediaStore();
   
   return (
@@ -213,6 +231,8 @@ const TrackLayer: React.FC<TrackLayerProps> = ({ track, y, zoom, timeToX, trackH
             zoom={zoom}
             timeToX={timeToX}
             height={trackHeight - 4}
+            isSelected={clip.id === selectedClipId}
+            onSelect={onSelectClip}
           />
         );
       })}
@@ -227,9 +247,11 @@ interface ClipRectProps {
   zoom: number;
   timeToX: (time: number) => number;
   height: number;
+  isSelected: boolean;
+  onSelect: (clipId: string | null) => void;
 }
 
-const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, height }) => {
+const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, height, isSelected, onSelect }) => {
   const { updateClip } = useTimelineStore();
   const [isDragging, setIsDragging] = useState(false);
   
@@ -255,12 +277,20 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
     e.target.x(x);
   };
   
-  // Clip style colors
-  const fillColor = isDragging ? '#64a5f5' : '#4a9eff';
-  const strokeColor = '#6bb0ff';
+  const handleClick = (e: any) => {
+    // Don't select if dragging
+    if (isDragging) return;
+    e.cancelBubble = true;
+    onSelect(clip.id);
+  };
+  
+  // Clip style colors - show selected state
+  const fillColor = isDragging ? '#64a5f5' : isSelected ? '#3b82f6' : '#4a9eff';
+  const strokeColor = isSelected ? '#60a5fa' : '#6bb0ff';
+  const strokeWidth = isSelected ? 2.5 : 1.5;
   
   return (
-    <Group>
+    <Group onClick={handleClick}>
       <Rect
         x={x}
         y={y}
@@ -268,15 +298,15 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
         height={height}
         fill={fillColor}
         stroke={strokeColor}
-        strokeWidth={1.5}
+        strokeWidth={strokeWidth}
         cornerRadius={3}
         draggable
         dragBoundFunc={dragBoundFunc}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
-        shadowColor="black"
-        shadowBlur={8}
-        shadowOpacity={0.2}
+        shadowColor={isSelected ? "#60a5fa" : "black"}
+        shadowBlur={isSelected ? 12 : 8}
+        shadowOpacity={isSelected ? 0.4 : 0.2}
       />
       
       {/* Clip label */}
