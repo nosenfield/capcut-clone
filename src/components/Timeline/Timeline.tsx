@@ -21,7 +21,7 @@ export const Timeline: React.FC = () => {
   const tracks = useTimelineStore((state) => state.tracks);
   const playheadPosition = useTimelineStore((state) => state.playheadPosition);
   const zoom = useTimelineStore((state) => state.zoom);
-  const duration = useTimelineStore((state) => state.duration);
+  const compositionLength = useTimelineStore((state) => state.compositionLength);
   const selectedClipId = useTimelineStore((state) => state.selectedClipId);
   const selectClip = useTimelineStore((state) => state.selectClip);
   const removeClip = useTimelineStore((state) => state.removeClip);
@@ -56,7 +56,7 @@ export const Timeline: React.FC = () => {
   // Convert time to x position
   const timeToX = (time: number): number => time * zoom;
   
-  const calculatedWidth = Math.max(stageWidth, timeToX(duration || 0));
+  const calculatedWidth = Math.max(stageWidth, timeToX(compositionLength));
   
   // Handle timeline click for seeking
   const handleTimelineClick = (e: any) => {
@@ -94,7 +94,7 @@ export const Timeline: React.FC = () => {
             
             <TimeRuler 
               zoom={zoom} 
-              duration={duration || 0} 
+              duration={compositionLength} 
               stageWidth={stageWidth}
               height={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT}
             />

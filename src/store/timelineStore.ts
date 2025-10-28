@@ -10,6 +10,7 @@ import { TimelineState, TimelineClip, TimelineTrack } from '../types/timeline';
 
 interface TimelineStoreState extends TimelineState {
   selectedClipId: string | null;
+  compositionLength: number; // Fixed composition length in seconds
   
   // Actions
   addClip: (clip: TimelineClip) => void;
@@ -19,6 +20,7 @@ interface TimelineStoreState extends TimelineState {
   setPlayheadPosition: (position: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setZoom: (zoom: number) => void;
+  setCompositionLength: (length: number) => void;
   addTrack: (track: TimelineTrack) => void;
   removeTrack: (trackId: string) => void;
   reorderClips: (trackId: string, clips: TimelineClip[]) => void;
@@ -31,6 +33,7 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
   ],
   playheadPosition: 0,
   duration: 0,
+  compositionLength: 10, // Default 10 second composition
   zoom: 50, // 50 pixels per second default
   isPlaying: false,
   selectedClipId: null,
@@ -80,6 +83,8 @@ export const useTimelineStore = create<TimelineStoreState>((set) => ({
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   
   setZoom: (zoom) => set({ zoom }),
+  
+  setCompositionLength: (length) => set({ compositionLength: Math.max(1, length) }),
   
   addTrack: (track) => set((state) => ({
     tracks: [...state.tracks, track]

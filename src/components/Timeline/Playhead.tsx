@@ -17,6 +17,7 @@ export interface PlayheadProps {
 
 export const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight }) => {
   const setPlayheadPosition = useTimelineStore((state) => state.setPlayheadPosition);
+  const duration = useTimelineStore((state) => state.duration);
   const x = position * zoom;
   
   const handleDragEnd = (e: any) => {
@@ -24,7 +25,7 @@ export const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rule
     if (!group) return;
     
     const dragOffset = group.x();
-    const newPosition = Math.max(0, (x + dragOffset) / zoom);
+    const newPosition = Math.max(0, Math.min(duration, (x + dragOffset) / zoom));
     
     setPlayheadPosition(newPosition);
     group.x(0);
@@ -36,7 +37,11 @@ export const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rule
       x={0}
       y={rulerHeight - 8}
       draggable
-      dragBoundFunc={(pos) => ({ x: pos.x, y: rulerHeight - 8 })}
+      dragBoundFunc={(pos) => {
+        const maxX = duration * zoom;
+        const clampedX = Math.max(0, Math.min(maxX, pos.x));
+        return { x: clampedX, y: rulerHeight - 8 };
+      }}
       onDragEnd={handleDragEnd}
     >
       <Line

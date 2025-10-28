@@ -25,7 +25,7 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
   const isPlaying = useTimelineStore((state) => state.isPlaying);
   const setIsPlaying = useTimelineStore((state) => state.setIsPlaying);
   const setPlayheadPosition = useTimelineStore((state) => state.setPlayheadPosition);
-  const duration = useTimelineStore((state) => state.duration);
+  const compositionLength = useTimelineStore((state) => state.compositionLength);
   
   // Sync video currentTime when playhead changes (while paused)
   useEffect(() => {
@@ -44,15 +44,20 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
       return;
     }
     
-    let animationFrameId: number;
-    let lastFrameTime = Date.now();
-    
-    const updatePlayhead = () => {
-      const currentPos = useTimelineStore.getState().playheadPosition;
+      let animationFrameId: number;
+      let lastFrameTime = Date.now();
       
-      // Check if we've reached the end of timeline
-      if (currentPos >= duration) {
-        setPlayheadPosition(duration);
+      const updatePlayhead = () => {
+        const now = Date.now();
+        const currentPos = useTimelineStore.getState().playheadPosition;
+      
+      // Check if we've reached the end of composition
+      if (currentPos >= compositionLength) {
+        console.log('[PlaybackSync] Reached end of composition:', {
+          currentPos: currentPos.toFixed(3),
+          compositionLength: compositionLength.toFixed(3),
+        });
+        setPlayheadPosition(compositionLength);
         setIsPlaying(false);
         if (videoRef.current) {
           videoRef.current.pause();
@@ -61,11 +66,13 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
       }
       
       let newPosition: number;
+      const wasInClip = !!currentClip;
       
       if (currentClip && videoRef.current) {
         // IN CLIP: Let video element drive time
         const video = videoRef.current;
         let actualVideoTime = video.currentTime;
+        const clipEndTime = currentClip.startTime + currentClip.duration;
         
         // Initialize video time if it's not in the valid range for this clip
         const expectedStart = currentClip.trimStart;
@@ -77,6 +84,13 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
           const offsetIntoClip = currentPos - currentClip.startTime;
           const correctVideoTime = currentClip.trimStart + offsetIntoClip;
           
+          console.log('[PlaybackSync] ⚠️ Clip START - entering clip:', {
+            playheadPos: currentPos.toFixed(3),
+            clipStart: currentClip.startTime.toFixed(3),
+            settingVideoTime: correctVideoTime.toFixed(3),
+            trimStart: currentClip.trimStart.toFixed(3),
+          });
+          
           // Set video time before reading from it
           video.currentTime = correctVideoTime;
           actualVideoTime = correctVideoTime;
@@ -85,18 +99,57 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
         const offsetIntoClip = actualVideoTime - currentClip.trimStart;
         newPosition = currentClip.startTime + offsetIntoClip;
         
-        // Ensure video is playing if it paused AND ready
-        if (video.paused && video.readyState >= 2) {
-          video.play().catch(err => {
-            handleError(err, 'usePlaybackSync.updatePlayhead');
-            setIsPlaying(false);
+        // Detect if video has reached the trimmed end (video stops advancing)
+        // When actualVideoTime stops advancing and we're at the trimmed end point,
+        // we need to exit the clip
+        const trimmedEndTime = currentClip.trimStart + currentClip.duration;
+        const atTrimmedEnd = Math.abs(actualVideoTime - trimmedEndTime) < 0.05;
+        
+        // If playhead has advanced beyond this clip OR video reached trimmed end, continue advancing
+        if (newPosition >= clipEndTime || atTrimmedEnd) {
+          if (atTrimmedEnd && newPosition < clipEndTime) {
+            console.log('[PlaybackSync] ⚠️ Video reached trimmed TAIL - exiting clip:', {
+              actualVideoTime: actualVideoTime.toFixed(3),
+              trimmedEndTime: trimmedEndTime.toFixed(3),
+              newPosition: newPosition.toFixed(3),
+              clipEndTime: clipEndTime.toFixed(3),
+              clipDuration: currentClip.duration.toFixed(3),
+              trimEnd: currentClip.trimEnd.toFixed(3),
+            });
+          }
+          console.log('[PlaybackSync] ⚠️ Clip END - passing clip tail:', {
+            playheadPos: newPosition.toFixed(3),
+            clipEndTime: clipEndTime.toFixed(3),
+            clipDuration: currentClip.duration.toFixed(3),
+            trimStart: currentClip.trimStart.toFixed(3),
+            trimEnd: currentClip.trimEnd.toFixed(3),
+            totalTrimmed: (currentClip.trimStart + currentClip.trimEnd).toFixed(3),
           });
+          
+          // Calculate delta from last frame to current frame
+          const delta = (now - lastFrameTime) / 1000;
+          newPosition = currentPos + delta;
+          
+          // Pause video when we've moved past the clip
+          if (!video.paused) {
+            video.pause();
+          }
+        } else {
+          // Ensure video is playing if it paused AND ready
+          if (video.paused && video.readyState >= 2) {
+            video.play().catch(err => {
+              handleError(err, 'usePlaybackSync.updatePlayhead');
+              setIsPlaying(false);
+            });
+          }
         }
       } else {
-        // IN GAP: Manually advance time with Date.now()
-        const now = Date.now();
+        // IN GAP: Manually advance time with delta calculation
+        if (wasInClip) {
+          console.log('[PlaybackSync] ⚠️ Entered GAP');
+        }
+        
         const delta = (now - lastFrameTime) / 1000; // delta in seconds
-        lastFrameTime = now;
         newPosition = currentPos + delta;
         
         // Pause video when in a gap
@@ -105,7 +158,10 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
         }
       }
       
-      // Update playhead position
+      // Always update lastFrameTime at end of frame for next frame's delta calculation
+      lastFrameTime = now;
+      
+      // Update playhead position (allow it to continue past clips until it hits duration check)
       setPlayheadPosition(newPosition);
       
       animationFrameId = requestAnimationFrame(updatePlayhead);
@@ -154,6 +210,6 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isPlaying, currentClip, duration, videoRef, setPlayheadPosition, setIsPlaying]);
+  }, [isPlaying, currentClip, compositionLength, videoRef, setPlayheadPosition, setIsPlaying]);
 };
 

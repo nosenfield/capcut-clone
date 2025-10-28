@@ -14,7 +14,8 @@ export const TimelineControls: React.FC = () => {
   const playheadPosition = useTimelineStore((state) => state.playheadPosition);
   const isPlaying = useTimelineStore((state) => state.isPlaying);
   const setIsPlaying = useTimelineStore((state) => state.setIsPlaying);
-  const duration = useTimelineStore((state) => state.duration);
+  const compositionLength = useTimelineStore((state) => state.compositionLength);
+  const setCompositionLength = useTimelineStore((state) => state.setCompositionLength);
   
   return (
     <div className="timeline-controls flex items-center gap-4 p-3 bg-gray-800 border-b border-gray-700">
@@ -25,9 +26,31 @@ export const TimelineControls: React.FC = () => {
         {isPlaying ? '⏸ Pause' : '▶ Play'}
       </button>
       
-      <span className="text-white text-sm font-mono min-w-[120px]">
-        {playheadPosition.toFixed(2)}s / {duration.toFixed(2)}s
-      </span>
+      <div className="flex items-center gap-1 text-white text-sm font-mono">
+        <span>{playheadPosition.toFixed(2)}s / </span>
+        <input
+          type="number"
+          min="0.1"
+          max="600"
+          step="0.1"
+          value={compositionLength}
+          onChange={(e) => {
+            const newValue = Number(e.target.value);
+            if (newValue > 0) {
+              setCompositionLength(newValue);
+            }
+          }}
+          onBlur={(e) => {
+            const newValue = Number(e.target.value);
+            if (newValue <= 0 || isNaN(newValue)) {
+              // Reset to last valid value if input is invalid
+              e.target.value = compositionLength.toString();
+            }
+          }}
+          className="w-32 px-2 py-1 bg-gray-700 text-white text-sm rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <span>s</span>
+      </div>
       
       <div className="flex items-center gap-2">
         <span className="text-white text-sm">Zoom:</span>
