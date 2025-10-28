@@ -3,13 +3,24 @@
 // Defines Tauri commands that expose FFmpeg operations to the frontend.
 // These commands are invoked from the React app and handle media operations.
 
-use crate::ffmpeg::{FFmpegExecutor, MediaMetadata, ClipInfo};
+use crate::ffmpeg::{FFmpegExecutor, ClipInfo};
 
 /// Get media metadata from a video file
 #[tauri::command]
-pub async fn get_media_metadata(file_path: String) -> Result<MediaMetadata, String> {
+pub async fn get_media_metadata(file_path: String) -> Result<serde_json::Value, String> {
     let executor = FFmpegExecutor::new()?;
-    executor.get_metadata(&file_path)
+    let metadata = executor.get_metadata(&file_path)?;
+    
+    // Convert to JSON with camelCase field names
+    Ok(serde_json::json!({
+        "duration": metadata.duration,
+        "width": metadata.width,
+        "height": metadata.height,
+        "fps": metadata.fps,
+        "codec": metadata.codec,
+        "bitrate": metadata.bitrate,
+        "fileSize": metadata.file_size,
+    }))
 }
 
 /// Generate a thumbnail image from a video at a specific timestamp

@@ -6,13 +6,16 @@
 import React from 'react';
 import { useMediaStore } from '../../store/mediaStore';
 import { useTimelineStore } from '../../store/timelineStore';
+import { useAppStore } from '../../store/appStore';
 import { videoService } from '../../services/videoService';
 import { MediaFile } from '../../types/media';
 import { v4 as uuidv4 } from 'uuid';
+import { toAppError } from '../../utils/errors';
 
 export const MediaLibrary: React.FC = () => {
   const { files, selectedFileId, addMediaFile, removeMediaFile, selectMediaFile } = useMediaStore();
   const { tracks, addClip, removeClip } = useTimelineStore();
+  const { setError } = useAppStore();
   const [isImporting, setIsImporting] = React.useState(false);
   
   const handleImport = async () => {
@@ -44,7 +47,8 @@ export const MediaLibrary: React.FC = () => {
       });
     } catch (error) {
       console.error('Import failed:', error);
-      alert('Failed to import videos');
+      const appError = toAppError(error);
+      setError(appError.userMessage);
     } finally {
       setIsImporting(false);
     }
@@ -171,17 +175,32 @@ const MediaCard: React.FC<MediaCardProps> = ({
         ${isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-gray-900'}
       `}
     >
-      <div data-name="media-card-content" className="flex items-center gap-2 px-3 py-2">
-        <div data-name="media-card-name" className="flex-1 font-medium text-sm truncate" title={file.name}>
+      {/* Thumbnail */}
+      {file.thumbnailUrl && (
+        <img 
+          src={file.thumbnailUrl} 
+          alt={file.name}
+          className="w-full h-32 object-cover bg-gray-800"
+        />
+      )}
+      
+      <div data-name="media-card-content" className="flex flex-col gap-1 px-3 py-2 relative">
+        <div data-name="media-card-name" className="font-medium text-sm truncate" title={file.name}>
           {file.name}
         </div>
-        <div data-name="media-card-size" className="text-xs text-gray-400">
-          {(file.fileSize / (1024 * 1024)).toFixed(1)}MB
+        <div className="flex gap-3 text-xs text-gray-400">
+          <span>{Math.floor(file.duration / 60)}:{String(Math.floor(file.duration % 60)).padStart(2, '0')}</span>
+          <span>{file.width}x{file.height}</span>
+          <span>{file.fps.toFixed(0)} fps</span>
+          {file.fileSize > 0 && (
+            <span>{(file.fileSize / (1024 * 1024)).toFixed(1)}MB</span>
+          )}
         </div>
+        
         <button
           data-name={`media-card-remove-button-${file.id}`}
           onClick={onRemove}
-          className="text-red-500 hover:text-red-600 transition-colors text-lg font-bold"
+          className="absolute top-2 right-2 text-red-500 hover:text-red-600 transition-colors text-xl font-bold bg-black/50 rounded w-6 h-6 flex items-center justify-center"
           title="Delete clip"
         >
           ×

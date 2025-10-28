@@ -49,9 +49,12 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
     ? TIMELINE_CONSTANTS.TICK_INTERVAL_MEDIUM 
     : TIMELINE_CONSTANTS.TICK_INTERVAL_SMALL;
   
-  for (let t = 0; t <= Math.max(duration, 10); t += interval) {
+  // Calculate max width based on composition length, not just stageWidth
+  const maxRenderWidth = Math.max(stageWidth, compositionLength * zoom + 200);
+  
+  for (let t = 0; t <= Math.max(duration, compositionLength, 10); t += interval) {
     const x = t * zoom;
-    if (x > stageWidth + 200) break;
+    if (x > maxRenderWidth) break;
     
     ticks.push(
       <React.Fragment key={t}>
@@ -75,9 +78,9 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
   // Small ticks for every second
   const smallTicks: React.ReactNode[] = [];
   if (zoom > TIMELINE_CONSTANTS.ZOOM_THRESHOLD_SMALL) {
-    for (let t = 0; t <= Math.max(duration, 10); t++) {
+    for (let t = 0; t <= Math.max(duration, compositionLength, 10); t++) {
       const x = t * zoom;
-      if (x > stageWidth + 200) break;
+      if (x > maxRenderWidth) break;
       
       if (t % interval !== 0) {
         smallTicks.push(
@@ -94,7 +97,7 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
   
   return (
     <>
-      <Rect x={0} y={0} width={stageWidth} height={height} fill="#0f0f0f" />
+      <Rect x={0} y={0} width={maxRenderWidth} height={height} fill="#0f0f0f" />
       {smallTicks}
       {ticks}
       {/* Invisible hit area for mouse interactions */}

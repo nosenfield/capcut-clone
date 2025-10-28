@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { MediaFile, MediaMetadata } from '../types/media';
 import { v4 as uuidv4 } from 'uuid';
-import { handleError, createFFmpegError } from '../utils/errors';
+import { handleError, createFFmpegError, toAppError } from '../utils/errors';
 
 export class VideoService {
   /**
@@ -31,19 +31,34 @@ export class VideoService {
       const paths = Array.isArray(selected) ? selected : [selected];
       const mediaFiles: MediaFile[] = [];
       
+      const errors: string[] = [];
+      
       for (const path of paths) {
         try {
           const mediaFile = await this.createMediaFile(path as string);
           mediaFiles.push(mediaFile);
         } catch (error) {
           handleError(error, `VideoService.importVideos - ${path}`);
+          const appError = toAppError(error);
+          errors.push(`${path.split('/').pop()}: ${appError.userMessage}`);
         }
+      }
+      
+      // If some files failed to import, throw error with details
+      if (errors.length > 0 && mediaFiles.length === 0) {
+        // All files failed
+        throw new Error(`Failed to import any files:\n${errors.join('\n')}`);
+      } else if (errors.length > 0) {
+        // Some files failed
+        const partialError = new Error(`Some files failed to import:\n${errors.join('\n')}`);
+        handleError(partialError, 'VideoService.importVideos - partial failure');
+        // Return successfully imported files but don't throw (files may still be valid)
       }
       
       return mediaFiles;
     } catch (error) {
       handleError(error, 'VideoService.importVideos - dialog');
-      return [];
+      throw error; // Re-throw to let caller handle UI display
     }
   }
   
@@ -72,7 +87,7 @@ export class VideoService {
         width: metadata.width,
         height: metadata.height,
         fps: metadata.fps,
-        fileSize: 0, // TODO: Get file size from metadata
+        fileSize: metadata.fileSize || 0,
         thumbnailUrl,
         createdAt: new Date()
       };

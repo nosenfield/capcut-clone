@@ -16,6 +16,7 @@ pub struct MediaMetadata {
     pub fps: f64,
     pub codec: String,
     pub bitrate: u64,
+    pub file_size: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,6 +124,11 @@ impl FFmpegExecutor {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(0);
         
+        let file_size = json["format"]["size"]
+            .as_str()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(0);
+        
         Ok(MediaMetadata {
             duration,
             width,
@@ -130,6 +136,7 @@ impl FFmpegExecutor {
             fps,
             codec,
             bitrate,
+            file_size,
         })
     }
     

@@ -64,5 +64,8 @@ export interface MediaMetadata {
   
   /** Bitrate in bits per second */
   bitrate: number;
+  
+  /** File size in bytes */
+  fileSize: number;
 }
 
