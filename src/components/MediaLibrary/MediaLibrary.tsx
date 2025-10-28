@@ -178,6 +178,13 @@ const MediaCard: React.FC<MediaCardProps> = ({
         <div className="text-xs text-gray-400">
           {(file.fileSize / (1024 * 1024)).toFixed(1)}MB
         </div>
+        <button
+          onClick={onRemove}
+          className="text-red-500 hover:text-red-600 transition-colors text-lg font-bold"
+          title="Delete clip"
+        >
+          ×
+        </button>
       </div>
     </div>
   );
