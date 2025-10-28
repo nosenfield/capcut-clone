@@ -1,5 +1,7 @@
-Description: Core project setup and architecture patterns
-Globs: **/*.rs, **/*.ts, **/*.tsx
+---
+description: Core project setup and architecture patterns
+globs: **/*.rs, **/*.ts, **/*.tsx
+---
 
 # CapCut Clone - Core Project Rules
 

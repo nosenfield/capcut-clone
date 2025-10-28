@@ -1,5 +1,7 @@
-Description: Tauri v2 specific patterns and configuration
-Globs: src-tauri/**/*.rs, src-tauri/**/*.toml, src-tauri/**/*.json
+---
+description: Tauri v2 specific patterns and configuration
+globs: src-tauri/**/*.rs, src-tauri/**/*.toml, src-tauri/**/*.json
+---
 
 # Tauri v2 Integration Patterns
 

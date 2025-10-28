@@ -1,5 +1,7 @@
-Description: Zustand state management patterns
-Globs: src/store/**/*.ts
+---
+description: Zustand state management patterns
+globs: src/store/**/*.ts
+---
 
 # Zustand State Management Patterns
 

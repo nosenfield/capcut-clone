@@ -1,5 +1,7 @@
-Description: TailwindCSS v4 configuration patterns
-Globs: **/*.css, **/*.tsx, tailwind.config.js, postcss.config.js
+---
+description: TailwindCSS v4 configuration patterns
+globs: **/*.css, **/*.tsx, tailwind.config.js, postcss.config.js
+---
 
 # TailwindCSS v4 Patterns
 

@@ -1,5 +1,7 @@
-Description: React component patterns and best practices
-Globs: src/components/**/*.tsx
+---
+description: React component patterns and best practices
+globs: src/components/**/*.tsx
+---
 
 # React Component Patterns
 

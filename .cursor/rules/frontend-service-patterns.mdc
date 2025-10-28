@@ -1,5 +1,7 @@
-Description: Frontend service layer patterns for Tauri integration
-Globs: src/services/**/*.ts
+---
+description: Frontend service layer patterns for Tauri integration
+globs: src/services/**/*.ts
+---
 
 # Frontend Service Layer Patterns
 

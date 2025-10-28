@@ -1,5 +1,7 @@
-Description: FFmpeg integration patterns and best practices
-Globs: src-tauri/src/ffmpeg.rs, src-tauri/src/commands.rs
+---
+description: FFmpeg integration patterns and best practices
+globs: src-tauri/src/ffmpeg.rs, src-tauri/src/commands.rs
+---
 
 # FFmpeg Integration Patterns
 
