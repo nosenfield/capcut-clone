@@ -289,6 +289,34 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
   const strokeColor = isSelected ? '#60a5fa' : '#6bb0ff';
   const strokeWidth = isSelected ? 2.5 : 1.5;
   
+  // Trim handle handlers
+  const handleLeftTrimDrag = (e: any) => {
+    const deltaX = (e.target.x() - x) / zoom;
+    const newTrimStart = Math.max(0, Math.min(clip.trimStart + deltaX, (mediaFile?.duration || 0) - clip.trimEnd - 0.1));
+    const actualDelta = newTrimStart - clip.trimStart;
+    const newDuration = clip.duration - actualDelta;
+    const newStartTime = clip.startTime - actualDelta;
+    
+    if (newDuration >= 0.1 && newStartTime >= 0) {
+      updateClip(clip.id, { trimStart: newTrimStart, duration: newDuration, startTime: newStartTime });
+    }
+    e.target.x(x);
+  };
+  
+  const handleRightTrimDrag = (e: any) => {
+    const newWidth = e.target.x() - x;
+    const newDuration = newWidth / zoom;
+    const maxDuration = (mediaFile?.duration || 0) - clip.trimStart - clip.trimEnd;
+    const constrainedDuration = Math.max(0.1, Math.min(newDuration, maxDuration));
+    const actualDelta = constrainedDuration - clip.duration;
+    const newTrimEnd = Math.max(0, clip.trimEnd - actualDelta);
+    
+    if (constrainedDuration >= 0.1) {
+      updateClip(clip.id, { duration: constrainedDuration, trimEnd: newTrimEnd });
+    }
+    e.target.x(x + width);
+  };
+  
   return (
     <Group onClick={handleClick}>
       <Rect
@@ -308,6 +336,39 @@ const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, 
         shadowBlur={isSelected ? 12 : 8}
         shadowOpacity={isSelected ? 0.4 : 0.2}
       />
+      
+      {/* Trim handles - only show when selected */}
+      {isSelected && (
+        <>
+          {/* Left trim handle */}
+          <Rect
+            x={x}
+            y={y}
+            width={8}
+            height={height}
+            fill="#ff6b35"
+            stroke="#fff"
+            strokeWidth={1}
+            draggable
+            dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
+            onDragEnd={handleLeftTrimDrag}
+          />
+          
+          {/* Right trim handle */}
+          <Rect
+            x={x + width - 8}
+            y={y}
+            width={8}
+            height={height}
+            fill="#ff6b35"
+            stroke="#fff"
+            strokeWidth={1}
+            draggable
+            dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
+            onDragEnd={handleRightTrimDrag}
+          />
+        </>
+      )}
       
       {/* Clip label */}
       {width > 40 && (
