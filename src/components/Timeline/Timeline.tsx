@@ -6,21 +6,26 @@
  */
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
+import { Stage, Layer, Rect } from 'react-konva';
 import { useTimelineStore } from '../../store/timelineStore';
-import { useMediaStore } from '../../store/mediaStore';
-import { TimelineClip } from '../../types/timeline';
-
-const TRACK_HEIGHT = 60;
-const TRACK_PADDING = 4;
-const TIMELINE_HEIGHT = 200;
-const TIME_RULER_HEIGHT = 30;
+import { TIMELINE_CONSTANTS } from '../../constants/timeline';
+import { TimeRuler } from './TimeRuler';
+import { Track } from './Track';
+import { Playhead } from './Playhead';
+import { TimelineControls } from './TimelineControls';
 
 export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
   
-  const { tracks, playheadPosition, zoom, duration, selectedClipId, selectClip, removeClip, setPlayheadPosition } = useTimelineStore();
+  const tracks = useTimelineStore((state) => state.tracks);
+  const playheadPosition = useTimelineStore((state) => state.playheadPosition);
+  const zoom = useTimelineStore((state) => state.zoom);
+  const duration = useTimelineStore((state) => state.duration);
+  const selectedClipId = useTimelineStore((state) => state.selectedClipId);
+  const selectClip = useTimelineStore((state) => state.selectClip);
+  const removeClip = useTimelineStore((state) => state.removeClip);
+  const setPlayheadPosition = useTimelineStore((state) => state.setPlayheadPosition);
   
   // Update stage width on resize
   useEffect(() => {
@@ -38,7 +43,6 @@ export const Timeline: React.FC = () => {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Delete key removes selected clip
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
         e.preventDefault();
         removeClip(selectedClipId);
@@ -50,23 +54,20 @@ export const Timeline: React.FC = () => {
   }, [selectedClipId, removeClip]);
   
   // Convert time to x position
-  const timeToX = (time: number): number => {
-    return time * zoom;
-  };
+  const timeToX = (time: number): number => time * zoom;
   
   const calculatedWidth = Math.max(stageWidth, timeToX(duration || 0));
   
   // Handle timeline click for seeking
   const handleTimelineClick = (e: any) => {
     const target = e.target;
-    
-    // Only seek when clicking in time ruler area - check target name to avoid conflicts with clips
     const targetName = target.name();
+    
     if (!targetName || targetName === 'background') {
-      const stage = e.target.getStage();
-      const pointerPos = stage.getPointerPosition();
-      // Only seek if click is in the time ruler area (top 30px), not in track area
-      if (pointerPos && pointerPos.y <= TIME_RULER_HEIGHT) {
+      const stage = target.getStage();
+      const pointerPos = stage?.getPointerPosition();
+      
+      if (pointerPos && pointerPos.y <= TIMELINE_CONSTANTS.TIME_RULER_HEIGHT) {
         const newPosition = pointerPos.x / zoom;
         setPlayheadPosition(Math.max(0, newPosition));
       }
@@ -80,46 +81,42 @@ export const Timeline: React.FC = () => {
       <TimelineControls />
       
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <Stage width={calculatedWidth} height={TIMELINE_HEIGHT}>
+        <Stage width={calculatedWidth} height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}>
           <Layer onClick={handleTimelineClick}>
-            {/* Background - name for click detection */}
             <Rect
               x={0}
               y={0}
               width={calculatedWidth}
-              height={TIMELINE_HEIGHT}
+              height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}
               fill="#1a1a1a"
               name="background"
             />
             
-            {/* Time ruler */}
             <TimeRuler 
               zoom={zoom} 
               duration={duration || 0} 
               stageWidth={stageWidth}
-              height={TIME_RULER_HEIGHT}
+              height={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT}
             />
             
-            {/* Tracks */}
             {tracks.map((track, index) => (
-              <TrackLayer
+              <Track
                 key={track.id}
                 track={track}
-                y={TIME_RULER_HEIGHT + index * (TRACK_HEIGHT + TRACK_PADDING)}
+                y={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT + index * (TIMELINE_CONSTANTS.TRACK_HEIGHT + TIMELINE_CONSTANTS.TRACK_PADDING)}
                 zoom={zoom}
                 timeToX={timeToX}
-                trackHeight={TRACK_HEIGHT}
+                trackHeight={TIMELINE_CONSTANTS.TRACK_HEIGHT}
                 selectedClipId={selectedClipId}
                 onSelectClip={selectClip}
               />
             ))}
             
-            {/* Playhead */}
             <Playhead 
               position={playheadPosition} 
               zoom={zoom} 
-              height={TIMELINE_HEIGHT}
-              rulerHeight={TIME_RULER_HEIGHT}
+              height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}
+              rulerHeight={TIMELINE_CONSTANTS.TIME_RULER_HEIGHT}
             />
           </Layer>
         </Stage>
@@ -127,397 +124,3 @@ export const Timeline: React.FC = () => {
     </div>
   );
 };
-
-interface TimeRulerProps {
-  zoom: number;
-  duration: number;
-  stageWidth: number;
-  height: number;
-}
-
-const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth, height }) => {
-  const ticks: React.ReactNode[] = [];
-  const interval = zoom < 20 ? 5 : zoom < 50 ? 2 : 1; // Seconds between ticks
-  
-  for (let t = 0; t <= Math.max(duration, 10); t += interval) {
-    const x = t * zoom;
-    if (x > stageWidth + 200) break;
-    
-    ticks.push(
-      <React.Fragment key={t}>
-        <Line
-          points={[x, height - 10, x, height]}
-          stroke="#555"
-          strokeWidth={1}
-        />
-        <Text
-          x={x + 4}
-          y={8}
-          text={`${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`}
-          fontSize={11}
-          fill="#999"
-          fontFamily="monospace"
-        />
-      </React.Fragment>
-    );
-  }
-  
-  // Small ticks for every second
-  const smallTicks: React.ReactNode[] = [];
-  for (let t = 0; t <= Math.max(duration, 10) && zoom > 30; t++) {
-    const x = t * zoom;
-    if (x > stageWidth + 200) break;
-    
-    if (t % interval !== 0) {
-      smallTicks.push(
-        <Line
-          key={`small-${t}`}
-          points={[x, height - 5, x, height]}
-          stroke="#666"
-          strokeWidth={0.5}
-        />
-      );
-    }
-  }
-  
-  return (
-    <>
-      <Rect x={0} y={0} width={stageWidth} height={height} fill="#0f0f0f" />
-      {smallTicks}
-      {ticks}
-    </>
-  );
-};
-
-interface TrackLayerProps {
-  track: any;
-  y: number;
-  zoom: number;
-  timeToX: (time: number) => number;
-  trackHeight: number;
-  selectedClipId: string | null;
-  onSelectClip: (clipId: string | null) => void;
-}
-
-const TrackLayer: React.FC<TrackLayerProps> = ({ track, y, zoom, timeToX, trackHeight, selectedClipId, onSelectClip }) => {
-  const { getMediaFile } = useMediaStore();
-  
-  return (
-    <>
-      {/* Track background */}
-      <Rect
-        x={0}
-        y={y}
-        width={10000}
-        height={trackHeight}
-        fill="#2a2a2a"
-        stroke="#444"
-        strokeWidth={1}
-      />
-      
-      {/* Track label */}
-      <Rect
-        x={0}
-        y={y}
-        width={120}
-        height={trackHeight}
-        fill="#333"
-        stroke="#444"
-        strokeWidth={1}
-      />
-      <Text
-        x={8}
-        y={y + 18}
-        text={track.name}
-        fontSize={12}
-        fill="#aaa"
-        fontFamily="sans-serif"
-      />
-      
-      {/* Clips */}
-      {track.clips.map((clip: TimelineClip) => {
-        const mediaFile = getMediaFile(clip.mediaFileId);
-        return (
-          <ClipRect
-            key={clip.id}
-            clip={clip}
-            mediaFile={mediaFile}
-            y={y + 2}
-            zoom={zoom}
-            timeToX={timeToX}
-            height={trackHeight - 4}
-            isSelected={clip.id === selectedClipId}
-            onSelect={onSelectClip}
-          />
-        );
-      })}
-    </>
-  );
-};
-
-interface ClipRectProps {
-  clip: TimelineClip;
-  mediaFile: any;
-  y: number;
-  zoom: number;
-  timeToX: (time: number) => number;
-  height: number;
-  isSelected: boolean;
-  onSelect: (clipId: string | null) => void;
-}
-
-const ClipRect: React.FC<ClipRectProps> = ({ clip, mediaFile, y, zoom, timeToX, height, isSelected, onSelect }) => {
-  const { updateClip } = useTimelineStore();
-  const [isDragging, setIsDragging] = useState(false);
-  
-  const x = timeToX(clip.startTime);
-  const width = clip.duration * zoom;
-  
-  // Constrain drag to horizontal movement only (prevent vertical movement)
-  const dragBoundFunc = (pos: { x: number; y: number }) => {
-    return {
-      x: pos.x,
-      y: y // Lock y position to prevent vertical dragging
-    };
-  };
-  
-  const handleDragEnd = (e: any) => {
-    const newX = e.target.x();
-    const newStartTime = newX / zoom;
-    
-    updateClip(clip.id, { startTime: Math.max(0, newStartTime) });
-    setIsDragging(false);
-    
-    // Reset position (store update will re-render)
-    e.target.x(0);
-  };
-  
-  const handleClick = (e: any) => {
-    // Don't select if dragging
-    if (isDragging) return;
-    e.cancelBubble = true;
-    onSelect(clip.id);
-  };
-  
-  // Clip style colors - show selected state
-  const fillColor = isDragging ? '#64a5f5' : isSelected ? '#3b82f6' : '#4a9eff';
-  const strokeColor = isSelected ? '#60a5fa' : '#6bb0ff';
-  const strokeWidth = isSelected ? 2.5 : 1.5;
-  
-  // Trim handle handlers
-  // Use ref to track the Group to prevent it from moving during trim
-  const clipGroupRef = React.useRef<any>(null);
-  
-  const handleLeftTrimDrag = (e: any) => {
-    // Stop event propagation to prevent Group from being affected
-    e.cancelBubble = true;
-    e.evt?.stopPropagation();
-    
-    const deltaX = e.target.x() / zoom;
-    const newTrimStart = Math.max(0, Math.min(clip.trimStart + deltaX, (mediaFile?.duration || 0) - clip.trimEnd - 0.1));
-    const actualDelta = newTrimStart - clip.trimStart;
-    const newDuration = clip.duration - actualDelta;
-    // Advance startTime to keep clip visually in same position on timeline
-    const newStartTime = clip.startTime + actualDelta;
-    
-    // Update all three values to keep clip visually stable
-    if (newDuration >= 0.1 && newStartTime >= 0) {
-      updateClip(clip.id, { trimStart: newTrimStart, duration: newDuration, startTime: newStartTime });
-    }
-    
-    // Reset handle to starting position
-    e.target.x(0);
-  };
-  
-  const handleRightTrimDrag = (e: any) => {
-    // Stop event propagation to prevent Group from being affected
-    e.cancelBubble = true;
-    e.evt?.stopPropagation();
-    
-    const currentPos = e.target.x();
-    const deltaX = currentPos - (width - 8);
-    const deltaTime = deltaX / zoom;
-    const newDuration = clip.duration + deltaTime;
-    const maxDuration = (mediaFile?.duration || 0) - clip.trimStart - clip.trimEnd;
-    const constrainedDuration = Math.max(0.1, Math.min(newDuration, maxDuration));
-    const actualDelta = constrainedDuration - clip.duration;
-    const newTrimEnd = Math.max(0, clip.trimEnd - actualDelta);
-    
-    // CRITICAL: Only update duration and trimEnd, NOT startTime
-    if (constrainedDuration >= 0.1) {
-      updateClip(clip.id, { duration: constrainedDuration, trimEnd: newTrimEnd });
-    }
-    
-    // Reset handle to correct position based on new duration
-    e.target.x(constrainedDuration * zoom - 8);
-  };
-  
-  return (
-    <Group 
-      name={`clip-group-${clip.id}`}
-      ref={clipGroupRef}
-      x={x}
-      y={y}
-      onClick={handleClick}
-      draggable
-      dragBoundFunc={dragBoundFunc}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={handleDragEnd}
-    >
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill={fillColor}
-        stroke={strokeColor}
-        strokeWidth={strokeWidth}
-        cornerRadius={3}
-        shadowColor={isSelected ? "#60a5fa" : "black"}
-        shadowBlur={isSelected ? 12 : 8}
-        shadowOpacity={isSelected ? 0.4 : 0.2}
-      />
-      
-      {/* Trim handles - only show when selected */}
-      {isSelected && (
-        <>
-          {/* Left trim handle */}
-          <Rect
-            x={0}
-            y={0}
-            width={8}
-            height={height}
-            fill="#ff6b35"
-            stroke="#fff"
-            strokeWidth={1}
-            draggable
-            dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
-            onDragEnd={handleLeftTrimDrag}
-          />
-          
-          {/* Right trim handle */}
-          <Rect
-            x={width - 8}
-            y={0}
-            width={8}
-            height={height}
-            fill="#ff6b35"
-            stroke="#fff"
-            strokeWidth={1}
-            draggable
-            dragBoundFunc={(pos) => ({ x: pos.x, y: y })}
-            onDragEnd={handleRightTrimDrag}
-          />
-        </>
-      )}
-      
-      {/* Clip label */}
-      {width > 40 && (
-        <Text
-          x={6}
-          y={8}
-          text={mediaFile?.name || 'Unknown'}
-          fontSize={11}
-          fill="#fff"
-          fontFamily="sans-serif"
-          listening={false}
-          width={width - 12}
-          ellipsis={true}
-        />
-      )}
-    </Group>
-  );
-};
-
-interface PlayheadProps {
-  position: number;
-  zoom: number;
-  height: number;
-  rulerHeight: number;
-}
-
-const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight }) => {
-  const x = position * zoom;
-  const { setPlayheadPosition } = useTimelineStore();
-  
-  const handleDragEnd = (e: any) => {
-    // The target could be the Group itself or one of its children (triangle/line)
-    // Get the Group reference
-    const group = e.target.getType() === 'Group' ? e.target : e.target.getParent();
-    
-    if (!group) return;
-    
-    // Get the Group's x offset (how far it was dragged)
-    const dragOffset = group.x();
-    // Calculate the new absolute position on the timeline
-    const newPosition = Math.max(0, (x + dragOffset) / zoom);
-    
-    // Update the playhead position in the store
-    setPlayheadPosition(newPosition);
-    
-    // Reset the Group's x offset since children positions are relative to Group
-    group.x(0);
-  };
-  
-  return (
-    <Group
-      name="playhead-group"
-      x={0}
-      y={rulerHeight - 8}
-      draggable
-      dragBoundFunc={(pos) => ({ x: pos.x, y: rulerHeight - 8 })}
-      onDragEnd={handleDragEnd}
-    >
-      {/* Playhead triangle on ruler - interactive */}
-      <Line
-        name="playhead-triangle"
-        points={[x, 8, x - 6, 0, x + 6, 0, x, 8]}
-        fill="#ff4444"
-        closed={true}
-      />
-      
-      {/* Playhead line - interactive */}
-      <Line
-        name="playhead-line"
-        points={[x, 8, x, height - rulerHeight + 8]}
-        stroke="#ff4444"
-        strokeWidth={2}
-      />
-    </Group>
-  );
-};
-
-const TimelineControls: React.FC = () => {
-  const { zoom, setZoom, playheadPosition, isPlaying, setIsPlaying, duration } = useTimelineStore();
-  
-  return (
-    <div data-name="timeline-controls" className="timeline-controls flex items-center gap-4 p-3 bg-gray-800 border-b border-gray-700">
-      <button
-        data-name="timeline-play-pause-button"
-        onClick={() => setIsPlaying(!isPlaying)}
-        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
-      >
-        {isPlaying ? '⏸ Pause' : '▶ Play'}
-      </button>
-      
-      <span data-name="timeline-duration-display" className="text-white text-sm font-mono min-w-[120px]">
-        {playheadPosition.toFixed(2)}s / {duration.toFixed(2)}s
-      </span>
-      
-      <div data-name="timeline-zoom-controls" className="flex items-center gap-2">
-        <span data-name="timeline-zoom-label" className="text-white text-sm">Zoom:</span>
-        <input
-          data-name="timeline-zoom-slider"
-          type="range"
-          min="10"
-          max="200"
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-32"
-        />
-        <span data-name="timeline-zoom-value" className="text-white text-sm font-mono min-w-[60px]">{zoom}px/s</span>
-      </div>
-    </div>
-  );
-};
-

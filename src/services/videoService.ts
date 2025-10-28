@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { MediaFile, MediaMetadata } from '../types/media';
 import { v4 as uuidv4 } from 'uuid';
+import { handleError, createFFmpegError } from '../utils/errors';
 
 export class VideoService {
   /**
@@ -35,13 +36,13 @@ export class VideoService {
           const mediaFile = await this.createMediaFile(path as string);
           mediaFiles.push(mediaFile);
         } catch (error) {
-          console.error(`Failed to import ${path}:`, error);
+          handleError(error, `VideoService.importVideos - ${path}`);
         }
       }
       
       return mediaFiles;
     } catch (error) {
-      console.error('Failed to open file dialog:', error);
+      handleError(error, 'VideoService.importVideos - dialog');
       return [];
     }
   }
@@ -76,8 +77,8 @@ export class VideoService {
         createdAt: new Date()
       };
     } catch (error) {
-      console.error('Failed to create media file:', error);
-      throw error;
+      handleError(error, 'VideoService.createMediaFile');
+      throw createFFmpegError(String(error));
     }
   }
   
@@ -94,8 +95,8 @@ export class VideoService {
       
       return `data:image/jpeg;base64,${base64Image}`;
     } catch (error) {
-      console.error('Failed to generate thumbnail:', error);
-      throw error;
+      handleError(error, 'VideoService.generateThumbnail');
+      throw createFFmpegError(String(error));
     }
   }
   
@@ -122,8 +123,8 @@ export class VideoService {
         fps
       });
     } catch (error) {
-      console.error('Failed to export video:', error);
-      throw error;
+      handleError(error, 'VideoService.exportVideo');
+      throw createFFmpegError(String(error));
     }
   }
   
@@ -137,8 +138,8 @@ export class VideoService {
       });
       return metadata.duration;
     } catch (error) {
-      console.error('Failed to get video duration:', error);
-      throw error;
+      handleError(error, 'VideoService.getVideoDuration');
+      throw createFFmpegError(String(error));
     }
   }
 }
