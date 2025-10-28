@@ -16,6 +16,9 @@ export const PreviewPlayer: React.FC = () => {
   const { files } = useMediaStore();
   const videoRef = React.useRef<HTMLVideoElement>(null);
   
+  // Track previous clip to detect transitions
+  const prevClipRef = React.useRef<string | null>(null);
+  
   // Find current clip at playhead position
   const currentClip = React.useMemo(() => {
     for (const track of tracks) {
@@ -23,7 +26,27 @@ export const PreviewPlayer: React.FC = () => {
         c.startTime <= playheadPosition && 
         (c.startTime + c.duration) > playheadPosition
       );
-      if (clip) return clip;
+      if (clip) {
+        // Log when entering a new clip
+        const clipId = `${clip.id}-${clip.startTime}`;
+        if (prevClipRef.current !== clipId) {
+          console.log('[Clip Transition] Entering clip:', {
+            clipId: clip.id,
+            clipStart: clip.startTime.toFixed(3),
+            playheadPos: playheadPosition.toFixed(3),
+            trimStart: clip.trimStart.toFixed(3),
+            trimEnd: clip.trimEnd.toFixed(3),
+            duration: clip.duration.toFixed(3)
+          });
+          prevClipRef.current = clipId;
+        }
+        return clip;
+      }
+    }
+    // Log when exiting clip (entering gap)
+    if (prevClipRef.current !== null) {
+      console.log('[Clip Transition] Entering gap at playhead:', playheadPosition.toFixed(3));
+      prevClipRef.current = null;
     }
     return null;
   }, [tracks, playheadPosition]);
@@ -37,6 +60,7 @@ export const PreviewPlayer: React.FC = () => {
   const [videoSrc, setVideoSrc] = React.useState<string | null>(null);
   const blobUrlRef = React.useRef<string | null>(null);
   const lastMediaPathRef = React.useRef<string | null>(null);
+  const isVideoReadyRef = React.useRef<boolean>(false);
   
   // Create blob URL from file when media changes
   React.useEffect(() => {
@@ -139,6 +163,40 @@ export const PreviewPlayer: React.FC = () => {
     }
   }, [currentMedia, videoTime, isPlaying]);
   
+  // Track when video is ready to play and handle video loading state
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const handleLoadedMetadata = () => {
+      isVideoReadyRef.current = true;
+    };
+    
+    const handleLoadStart = () => {
+      isVideoReadyRef.current = false;
+    };
+    
+    const handleSeeked = () => {
+      isVideoReadyRef.current = true;
+    };
+    
+    const handleSeeking = () => {
+      isVideoReadyRef.current = false;
+    };
+    
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('seeking', handleSeeking);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('seeking', handleSeeking);
+    };
+  }, [videoSrc]);
+  
   // Update playhead when video plays and control playback
   React.useEffect(() => {
     if (!isPlaying) {
@@ -153,58 +211,146 @@ export const PreviewPlayer: React.FC = () => {
     let lastFrameTime = Date.now();
     
     const updatePlayhead = () => {
-      const now = Date.now();
-      const delta = (now - lastFrameTime) / 1000; // delta in seconds
-      lastFrameTime = now;
-      
       // Get current playhead position from store
       const currentPos = useTimelineStore.getState().playheadPosition;
-      const newPosition = currentPos + delta;
       
-      // Stop if reached end of timeline
-      if (newPosition >= duration) {
+      // Check if we've reached the end of timeline
+      if (currentPos >= duration) {
         setPlayheadPosition(duration);
         setIsPlaying(false);
-        if (videoRef.current && !videoRef.current.paused) {
+        if (videoRef.current) {
           videoRef.current.pause();
         }
         return;
       }
       
-      // Update playhead position
-      setPlayheadPosition(newPosition);
+      let newPosition: number;
       
-      // Handle video playback based on current clip
-      if (videoRef.current) {
-        if (currentClip) {
-          // We're in a clip - sync and play video
-          const actualVideoTime = currentClip.trimStart + (newPosition - currentClip.startTime);
-          videoRef.current.currentTime = actualVideoTime;
+      if (currentClip && videoRef.current) {
+        // IN CLIP: Let video element drive time (read-only, no forcing)
+        // This preserves audio and smooth playback
+        const video = videoRef.current;
+        let actualVideoTime = video.currentTime;
+        
+        // Initialize video time if it's not in the valid range for this clip
+        const expectedStart = currentClip.trimStart;
+        const expectedEnd = currentClip.trimStart + currentClip.duration;
+        
+        // Check if video is at the wrong time (happens when entering clip)
+        if (actualVideoTime < expectedStart || actualVideoTime > expectedEnd) {
+          console.log('[Video Init] Video time out of range, setting to correct position:', {
+            currentVideoTime: actualVideoTime.toFixed(3),
+            expectedStart: expectedStart.toFixed(3),
+            offsetIntoClip: (currentPos - currentClip.startTime).toFixed(3)
+          });
           
-          // Ensure video is playing
-          if (videoRef.current.paused) {
-            videoRef.current.play().catch(err => {
-              console.error('Error playing video:', err);
-              setIsPlaying(false);
-            });
-          }
-        } else {
-          // We're in a gap - pause video
-          if (!videoRef.current.paused) {
-            videoRef.current.pause();
-          }
+          // Calculate correct video time based on current playhead position
+          const offsetIntoClip = currentPos - currentClip.startTime;
+          const correctVideoTime = currentClip.trimStart + offsetIntoClip;
+          
+          // Set video time before reading from it
+          video.currentTime = correctVideoTime;
+          actualVideoTime = correctVideoTime;
+        }
+        
+        const offsetIntoClip = actualVideoTime - currentClip.trimStart;
+        newPosition = currentClip.startTime + offsetIntoClip;
+        
+        // Debug logging for playhead calculation
+        console.log('[Playback] Clip Info:', {
+          videoTime: actualVideoTime.toFixed(3),
+          clipStart: currentClip.startTime.toFixed(3),
+          trimStart: currentClip.trimStart.toFixed(3),
+          offsetIntoClip: offsetIntoClip.toFixed(3),
+          newPosition: newPosition.toFixed(3),
+          oldPosition: currentPos.toFixed(3),
+          clipDuration: currentClip.duration.toFixed(3)
+        });
+        
+        // Ensure video is playing if it paused AND ready
+        // Check readyState: 0=nothing, 1=metadata, 2=current data, 3=future data, 4=enough data
+        if (video.paused && video.readyState >= 2) {
+          video.play().catch(err => {
+            console.error('Error playing video:', err);
+            setIsPlaying(false);
+          });
+        }
+      } else {
+        // IN GAP: Manually advance time with Date.now()
+        // This allows playback to continue through gaps
+        const now = Date.now();
+        const delta = (now - lastFrameTime) / 1000; // delta in seconds
+        lastFrameTime = now;
+        newPosition = currentPos + delta;
+        
+        // Pause video when in a gap
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
         }
       }
+      
+      // Update playhead position
+      const positionChange = newPosition - currentPos;
+      if (Math.abs(positionChange) > 0.001) {
+        console.log('[Playhead Update]', {
+          oldPos: currentPos.toFixed(3),
+          newPos: newPosition.toFixed(3),
+          change: positionChange.toFixed(3),
+          isGoingBackwards: positionChange < 0
+        });
+      }
+      setPlayheadPosition(newPosition);
       
       animationFrameId = requestAnimationFrame(updatePlayhead);
     };
     
-    // Start playing video when isPlaying is true (initial state)
-    if (currentClip && videoRef.current && videoRef.current.paused) {
-      videoRef.current.play().catch(err => {
-        console.error('Error playing video:', err);
-        setIsPlaying(false);
-      });
+    // Start playing video when isPlaying is true and we have a clip
+    // First set the correct start time for front-trimmed clips
+    if (currentClip && videoRef.current && videoRef.current.readyState >= 2) {
+      if (videoRef.current.paused) {
+        const video = videoRef.current;
+        
+        // Set initial time before playing
+        const currentPos = useTimelineStore.getState().playheadPosition;
+        const offsetIntoClip = currentPos - currentClip.startTime;
+        const initialTime = currentClip.trimStart + offsetIntoClip;
+        
+        console.log('[Start Playback] Setting initial video time:', {
+          currentPos: currentPos.toFixed(3),
+          clipStart: currentClip.startTime.toFixed(3),
+          offsetIntoClip: offsetIntoClip.toFixed(3),
+          trimStart: currentClip.trimStart.toFixed(3),
+          initialVideoTime: initialTime.toFixed(3),
+          currentVideoTime: video.currentTime.toFixed(3)
+        });
+        
+        // If we need to seek first, wait for seek to complete
+        if (Math.abs(video.currentTime - initialTime) > 0.1) {
+          console.log('[Start Playback] Seeking needed');
+          // Set up one-time listener for seeked event
+          const handleSeekedOnce = () => {
+            video.removeEventListener('seeked', handleSeekedOnce);
+            console.log('[Start Playback] Seek complete, playing video');
+            // Only play if video is still ready after seek
+            if (video.readyState >= 2) {
+              video.play().catch(err => {
+                console.error('Error playing video after seek:', err);
+                setIsPlaying(false);
+              });
+            }
+          };
+          
+          video.addEventListener('seeked', handleSeekedOnce);
+          video.currentTime = initialTime;
+        } else {
+          console.log('[Start Playback] Already at correct position, playing');
+          // Already at correct position, just play
+          video.play().catch(err => {
+            console.error('Error playing video:', err);
+            setIsPlaying(false);
+          });
+        }
+      }
     }
     
     animationFrameId = requestAnimationFrame(updatePlayhead);
