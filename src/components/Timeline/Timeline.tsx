@@ -14,7 +14,11 @@ import { Track } from './Track';
 import { Playhead } from './Playhead';
 import { TimelineControls } from './TimelineControls';
 
-export const Timeline: React.FC = () => {
+interface TimelineProps {
+  onExportClick: () => void;
+}
+
+export const Timeline: React.FC<TimelineProps> = ({ onExportClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
   
@@ -78,7 +82,7 @@ export const Timeline: React.FC = () => {
   
   return (
     <div ref={containerRef} className="timeline-container h-full flex flex-col bg-gray-900">
-      <TimelineControls />
+      <TimelineControls onExportClick={onExportClick} />
       
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
         <Stage width={calculatedWidth} height={TIMELINE_CONSTANTS.TIMELINE_HEIGHT}>

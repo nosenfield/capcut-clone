@@ -20,10 +20,14 @@ pub struct MediaMetadata {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClipInfo {
+    #[serde(rename = "filePath")]
     pub file_path: String,
+    #[serde(rename = "startTime")]
     pub start_time: f64,
     pub duration: f64,
+    #[serde(rename = "trimStart")]
     pub trim_start: f64,
+    #[serde(rename = "trimEnd")]
     pub trim_end: f64,
 }
 
