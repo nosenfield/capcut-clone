@@ -35,12 +35,19 @@ export const PreviewPlayer: React.FC = () => {
   
   // State for video source URL and blob URL
   const [videoSrc, setVideoSrc] = React.useState<string | null>(null);
+  const blobUrlRef = React.useRef<string | null>(null);
   
   // Create blob URL from file when media changes
   React.useEffect(() => {
-    if (!currentMedia?.path) return;
-    
-    let blobUrl: string | null = null;
+    if (!currentMedia?.path) {
+      // Cleanup old blob URL
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+      setVideoSrc(null);
+      return;
+    }
     
     // Try to read file as blob
     const loadVideo = async () => {
@@ -48,7 +55,8 @@ export const PreviewPlayer: React.FC = () => {
         console.log('Reading video file:', currentMedia.path);
         const data = await readFile(currentMedia.path);
         const blob = new Blob([data], { type: 'video/mp4' });
-        blobUrl = URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        blobUrlRef.current = blobUrl;
         console.log('Created blob URL:', blobUrl);
         setVideoSrc(blobUrl);
       } catch (error) {
@@ -60,16 +68,18 @@ export const PreviewPlayer: React.FC = () => {
           setVideoSrc(src);
         } catch (e) {
           console.error('convertFileSrc also failed:', e);
+          setVideoSrc(null);
         }
       }
     };
     
     loadVideo();
     
-    // Cleanup blob URL on unmount
+    // Cleanup blob URL on unmount or media change
     return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
       }
     };
   }, [currentMedia?.path]);
@@ -130,24 +140,32 @@ export const PreviewPlayer: React.FC = () => {
       // Update playhead position
       setPlayheadPosition(newPosition);
       
-      // If there's a clip at this position, sync video
-      if (currentClip && videoRef.current) {
-        const actualVideoTime = currentClip.trimStart + (newPosition - currentClip.startTime);
-        videoRef.current.currentTime = actualVideoTime;
-        
-        // Continue playback if paused (shouldn't happen but just in case)
-        if (videoRef.current.paused) {
-          videoRef.current.play().catch(err => {
-            console.error('Error playing video:', err);
-            setIsPlaying(false);
-          });
+      // Handle video playback based on current clip
+      if (videoRef.current) {
+        if (currentClip) {
+          // We're in a clip - sync and play video
+          const actualVideoTime = currentClip.trimStart + (newPosition - currentClip.startTime);
+          videoRef.current.currentTime = actualVideoTime;
+          
+          // Ensure video is playing
+          if (videoRef.current.paused) {
+            videoRef.current.play().catch(err => {
+              console.error('Error playing video:', err);
+              setIsPlaying(false);
+            });
+          }
+        } else {
+          // We're in a gap - pause video
+          if (!videoRef.current.paused) {
+            videoRef.current.pause();
+          }
         }
       }
       
       animationFrameId = requestAnimationFrame(updatePlayhead);
     };
     
-    // Start playing video when isPlaying is true
+    // Start playing video when isPlaying is true (initial state)
     if (currentClip && videoRef.current && videoRef.current.paused) {
       videoRef.current.play().catch(err => {
         console.error('Error playing video:', err);
