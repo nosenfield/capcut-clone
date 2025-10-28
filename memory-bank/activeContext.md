@@ -1,18 +1,25 @@
 # Active Context - CapCut Clone Video Editor
 
-**Last Updated**: 2025-10-27  
-**Current Phase**: Phase 4 Complete (Timeline Editor)  
+**Last Updated**: 2025-01-27  
+**Current Phase**: Phase 5.1 Complete (Video Preview Player)  
 **Session Type**: Development
 
 ## Current Work Focus
 
-**Primary Objective**: Timeline editor and UI layout complete. Tailwind CSS v4 configuration fixed.
+**Primary Objective**: Video preview player with HTML5 video playback implemented.
 
-Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlayer placeholder all implemented. Critical Tailwind CSS v4 configuration issue resolved.
+Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlayer implemented. Video preview now plays actual video content using blob URLs. Tailwind CSS v4 configuration fixed.
 
 ## Recent Changes
 
-### Latest Session (2025-10-27)
+### Latest Session (2025-01-27)
+- **Task 5.1 Complete**: Implemented video preview player with HTML5 video element
+  - Replaced thumbnail placeholder with actual video playback
+  - Implemented blob URL loading using Tauri FS plugin
+  - Added playhead synchronization with requestAnimationFrame
+  - Video playback controlled by Timeline component
+  - Playback respects clip position and trim settings
+  - Fixed FFmpeg binary permissions issue
 - **Task 4.1 Complete**: Created Timeline canvas component with Konva.js
   - Time ruler with second/minute markers
   - Draggable clip rectangles with labels
@@ -84,9 +91,13 @@ Phases 1-4 complete. Timeline canvas with Konva.js, LayerPanel, and PreviewPlaye
 11. ✅ **Task 4.2**: Auto-add clips to timeline (complete)
 12. ✅ **Task 4.3**: Basic clip dragging (complete)
 
+**Phase 5.1 Complete:**
+13. ✅ **Task 5.1**: Create preview player component with video playback (complete)
+14. ✅ **Task 5.2**: Sync preview with timeline playhead (complete)
+
 **Next Phase:**
-13. ⏳ **Task 5.1**: Create preview player component with video playback (next)
-14. ⏳ **Task 5.2**: Sync preview with timeline playhead
+15. ⏳ **Task 6.1**: Implement clip selection (next)
+16. ⏳ **Task 6.2**: Implement basic trim controls
 
 ## Active Decisions & Considerations
 
