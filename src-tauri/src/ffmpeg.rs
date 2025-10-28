@@ -39,28 +39,71 @@ pub struct FFmpegExecutor {
 
 impl FFmpegExecutor {
     /// Creates a new FFmpegExecutor instance with bundled binary paths
+    /// Uses multi-strategy fallback: production bundle -> development -> system PATH
     pub fn new() -> Result<Self, String> {
-        // For development, use the binaries directory in the project
-        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-            .map_err(|e| format!("Failed to get manifest dir: {}", e))?;
-        let manifest_path = PathBuf::from(manifest_dir);
+        let mut attempted_paths = Vec::new();
         
-        let binaries_dir = manifest_path.join("binaries");
-        let ffmpeg_path = binaries_dir.join("ffmpeg");
-        let ffprobe_path = binaries_dir.join("ffprobe");
+        // Strategy 1: Production app bundle Resources directory
+        let exe_path = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
         
-        // Verify binaries exist
-        if !ffmpeg_path.exists() {
-            return Err(format!("FFmpeg binary not found at: {:?}", ffmpeg_path));
+        let resources_binaries = exe_path
+            .parent()                          // Contents/MacOS/ -> Contents/
+            .and_then(|p| p.parent())          // Contents/ -> MyApp.app/
+            .and_then(|p| p.parent())          // MyApp.app/ -> parent dir
+            .map(|p| p.join("Contents").join("Resources").join("binaries"));
+        
+        if let Some(ref path) = resources_binaries {
+            attempted_paths.push(format!("Production Resources: {}", path.display()));
+            let ffmpeg = path.join("ffmpeg");
+            let ffprobe = path.join("ffprobe");
+            
+            if ffmpeg.exists() && ffprobe.exists() {
+                eprintln!("✓ Found FFmpeg binaries in production Resources:");
+                eprintln!("  ffmpeg:  {:?}", ffmpeg);
+                eprintln!("  ffprobe: {:?}", ffprobe);
+                return Ok(Self { 
+                    ffmpeg_path: ffmpeg, 
+                    ffprobe_path: ffprobe 
+                });
+            }
         }
-        if !ffprobe_path.exists() {
-            return Err(format!("FFprobe binary not found at: {:?}", ffprobe_path));
+        
+        // Strategy 2: Development manifest directory
+        if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+            let binaries_dir = PathBuf::from(manifest_dir).join("binaries");
+            attempted_paths.push(format!("Development manifest: {}", binaries_dir.display()));
+            
+            let ffmpeg = binaries_dir.join("ffmpeg");
+            let ffprobe = binaries_dir.join("ffprobe");
+            
+            if ffmpeg.exists() && ffprobe.exists() {
+                eprintln!("✓ Found FFmpeg binaries in development:");
+                eprintln!("  ffmpeg:  {:?}", ffmpeg);
+                eprintln!("  ffprobe: {:?}", ffprobe);
+                return Ok(Self { 
+                    ffmpeg_path: ffmpeg, 
+                    ffprobe_path: ffprobe 
+                });
+            }
         }
         
-        Ok(Self {
-            ffmpeg_path,
-            ffprobe_path,
-        })
+        // Strategy 3: System PATH (fallback)
+        attempted_paths.push("System PATH".to_string());
+        if let Ok(ffmpeg_path) = which::which("ffmpeg") {
+            if let Ok(ffprobe_path) = which::which("ffprobe") {
+                eprintln!("✓ Found FFmpeg binaries in system PATH:");
+                eprintln!("  ffmpeg:  {:?}", ffmpeg_path);
+                eprintln!("  ffprobe: {:?}", ffprobe_path);
+                return Ok(Self { ffmpeg_path, ffprobe_path });
+            }
+        }
+        
+        // All strategies failed - provide detailed error
+        Err(format!(
+            "FFmpeg binaries not found. Attempted paths:\n{}",
+            attempted_paths.join("\n")
+        ))
     }
     
     /// Get metadata from a video file using FFprobe
