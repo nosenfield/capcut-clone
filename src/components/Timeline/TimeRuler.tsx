@@ -15,16 +15,15 @@ export interface TimeRulerProps {
   height: number;
   compositionLength: number;
   onSeek: (time: number) => void;
-  leftPadding?: number;
 }
 
-export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth, height, compositionLength, onSeek, leftPadding = 0 }) => {
+export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth, height, compositionLength, onSeek }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   
   const handleMouseDown = (e: any) => {
     e.cancelBubble = true; // Prevent timeline click handler
     setIsDragging(true);
-    const x = e.evt.layerX - leftPadding;
+    const x = e.evt.layerX;
     const time = x / zoom;
     const clampedTime = Math.max(0, Math.min(compositionLength, time));
     onSeek(clampedTime);
@@ -33,7 +32,7 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
   const handleMouseMove = (e: any) => {
     if (!isDragging) return;
     e.cancelBubble = true;
-    const x = e.evt.layerX - leftPadding;
+    const x = e.evt.layerX;
     const time = x / zoom;
     const clampedTime = Math.max(0, Math.min(compositionLength, time));
     onSeek(clampedTime);
@@ -51,7 +50,7 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
     : TIMELINE_CONSTANTS.TICK_INTERVAL_SMALL;
   
   for (let t = 0; t <= Math.max(duration, 10); t += interval) {
-    const x = t * zoom + leftPadding;
+    const x = t * zoom;
     if (x > stageWidth + 200) break;
     
     ticks.push(
@@ -77,7 +76,7 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
   const smallTicks: React.ReactNode[] = [];
   if (zoom > TIMELINE_CONSTANTS.ZOOM_THRESHOLD_SMALL) {
     for (let t = 0; t <= Math.max(duration, 10); t++) {
-      const x = t * zoom + leftPadding;
+      const x = t * zoom;
       if (x > stageWidth + 200) break;
       
       if (t % interval !== 0) {
@@ -95,12 +94,12 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ zoom, duration, stageWidth
   
   return (
     <>
-      <Rect x={leftPadding} y={0} width={stageWidth} height={height} fill="#0f0f0f" />
+      <Rect x={0} y={0} width={stageWidth} height={height} fill="#0f0f0f" />
       {smallTicks}
       {ticks}
       {/* Invisible hit area for mouse interactions */}
       <Rect
-        x={leftPadding}
+        x={0}
         y={0}
         width={Math.max(stageWidth, compositionLength * zoom)}
         height={height}

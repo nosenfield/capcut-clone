@@ -12,16 +12,15 @@ export interface PlayheadProps {
   zoom: number;
   height: number;
   rulerHeight: number;
-  leftPadding?: number;
 }
 
-export const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight, leftPadding = 0 }) => {
+export const Playhead: React.FC<PlayheadProps> = ({ position, zoom, height, rulerHeight }) => {
   const x = position * zoom;
   
   return (
     <Group
       name="playhead-group"
-      x={leftPadding}
+      x={0}
       y={rulerHeight - 8}
     >
       <Line

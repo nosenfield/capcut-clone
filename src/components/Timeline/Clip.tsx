@@ -19,25 +19,24 @@ export interface ClipProps {
   height: number;
   isSelected: boolean;
   onSelect: (clipId: string | null) => void;
-  leftPadding?: number;
 }
 
-export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSelected, onSelect, leftPadding = 0 }) => {
+export const Clip: React.FC<ClipProps> = ({ clip, y, zoom, timeToX, height, isSelected, onSelect }) => {
   const { updateClip } = useTimelineStore();
   const { getMediaFile } = useMediaStore();
   const [isDragging, setIsDragging] = useState(false);
   
   const mediaFile = getMediaFile(clip.mediaFileId);
-  const x = timeToX(clip.startTime) + leftPadding;
+  const x = timeToX(clip.startTime);
   const width = clip.duration * zoom;
   
   const dragBoundFunc = (pos: { x: number; y: number }) => ({
-    x: Math.max(leftPadding, pos.x),
+    x: pos.x,
     y: y
   });
   
   const handleDragEnd = (e: any) => {
-    const newX = e.target.x() - leftPadding;
+    const newX = e.target.x();
     const newStartTime = newX / zoom;
     
     updateClip(clip.id, { startTime: Math.max(0, newStartTime) });
