@@ -6,9 +6,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { readFile } from '@tauri-apps/plugin-fs';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { handleError } from '../utils/errors';
+import { videoCache } from './useVideoPreloader';
 
 export interface UseVideoLoaderResult {
   videoSrc: string | null;
@@ -58,10 +58,12 @@ export const useVideoLoader = (filePath: string | null): UseVideoLoaderResult =>
       setError(null);
       
       try {
-        // Read file and create blob
-        const data = await readFile(filePath);
-        const blob = new Blob([data], { type: 'video/mp4' });
-        const blobUrl = URL.createObjectURL(blob);
+        // Get blob URL from cache (will load if not already loaded/preloaded)
+        const blobUrl = await videoCache.getBlobUrl(filePath);
+        
+        if (!blobUrl) {
+          throw new Error('Failed to get blob URL from cache');
+        }
         
         if (!isCancelled) {
           blobUrlRef.current = blobUrl;
@@ -119,4 +121,3 @@ export const useVideoLoader = (filePath: string | null): UseVideoLoaderResult =>
   
   return { videoSrc, isLoading, error };
 };
-
