@@ -2,20 +2,22 @@
  * Preview Player Component
  * 
  * Displays video preview for the current playhead position with playback controls.
- * Refactored to use custom hooks for better separation of concerns.
+ * Uses video element pool for smooth, stutter-free clip transitions.
  */
 
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useTimelineStore } from '../../store/timelineStore';
 import { useMediaStore } from '../../store/mediaStore';
 import { useCurrentClip } from '../../hooks/useCurrentClip';
-import { useVideoLoader } from '../../hooks/useVideoLoader';
 import { usePlaybackSync } from '../../hooks/usePlaybackSync';
+import { videoElementPool, useVideoElementPreloader } from '../../hooks/useVideoElementPool';
+import { videoCache } from '../../hooks/useVideoPreloader';
 
 export const PreviewPlayer: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const currentVideoRef = useRef<HTMLVideoElement | null>(null);
   const files = useMediaStore((state) => state.files);
   const playheadPosition = useTimelineStore((state) => state.playheadPosition);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   
   // Use custom hook to find current clip
   const currentClip = useCurrentClip();
@@ -25,9 +27,6 @@ export const PreviewPlayer: React.FC = () => {
     if (!currentClip) return null;
     return files.find(f => f.id === currentClip.mediaFileId);
   }, [currentClip, files]);
-  
-  // Use custom hook to load video
-  const { videoSrc, isLoading, error } = useVideoLoader(currentMedia?.path || null);
   
   // Calculate video time considering clip position and trim settings
   const videoTime = useMemo(() => {
@@ -40,88 +39,101 @@ export const PreviewPlayer: React.FC = () => {
     return Math.max(0, Math.min(time, maxTime));
   }, [currentClip, currentMedia, playheadPosition]);
   
-  // Use custom hook to sync playback
-  usePlaybackSync({ videoRef, currentClip, videoTime });
+  // Preload upcoming video elements
+  useVideoElementPreloader({ currentClipId: currentClip?.id || null, lookAheadSeconds: 2 });
   
-  // Track video loading state
-  const isVideoReadyRef = useRef<boolean>(false);
-  
+  // Get or create video element for current clip
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (!currentClip || !currentMedia || !containerRef.current) {
+      // No clip - hide current video if any
+      if (currentVideoRef.current) {
+        currentVideoRef.current.style.display = 'none';
+      }
+      return;
+    }
     
-    const handleLoadedMetadata = () => {
-      isVideoReadyRef.current = true;
-    };
-    
-    const handleLoadStart = () => {
-      isVideoReadyRef.current = false;
-    };
-    
-    const handleSeeked = () => {
-      isVideoReadyRef.current = true;
-    };
-    
-    const handleSeeking = () => {
-      isVideoReadyRef.current = false;
-    };
-    
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('loadstart', handleLoadStart);
-    video.addEventListener('seeked', handleSeeked);
-    video.addEventListener('seeking', handleSeeking);
-    
-    return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('loadstart', handleLoadStart);
-      video.removeEventListener('seeked', handleSeeked);
-      video.removeEventListener('seeking', handleSeeking);
-    };
-  }, [videoSrc]);
-  
-  // Render loading state
-  if (isLoading) {
-    return (
-      <div className="preview-player h-full w-full flex items-center justify-center bg-black">
-        <div className="text-gray-500 text-center">
-          <p className="text-lg mb-2">Loading video...</p>
-        </div>
-      </div>
+    // Try to get preloaded element
+    const preloadedVideo = videoElementPool.getElement(
+      currentClip.id,
+      currentMedia.path,
+      currentClip.trimStart
     );
-  }
+    
+    if (preloadedVideo && preloadedVideo !== currentVideoRef.current) {
+      console.log(`[PreviewPlayer] Swapping to preloaded video for clip ${currentClip.id}`);
+      
+      // Hide old video if exists
+      if (currentVideoRef.current && currentVideoRef.current.parentNode) {
+        currentVideoRef.current.style.display = 'none';
+      }
+      
+      // Show preloaded video
+      preloadedVideo.style.display = 'block';
+      preloadedVideo.style.position = 'static';
+      preloadedVideo.style.top = 'auto';
+      preloadedVideo.muted = false; // Unmute for playback
+      preloadedVideo.className = 'w-auto h-auto max-w-full max-h-full';
+      preloadedVideo.style.maxWidth = '100%';
+      preloadedVideo.style.maxHeight = '100%';
+      preloadedVideo.style.objectFit = 'contain';
+      
+      // Move to container if not already there
+      if (preloadedVideo.parentNode !== containerRef.current) {
+        containerRef.current.appendChild(preloadedVideo);
+      }
+      
+      currentVideoRef.current = preloadedVideo;
+    } else if (!preloadedVideo && (!currentVideoRef.current || currentVideoRef.current.dataset.clipId !== currentClip.id)) {
+      console.log(`[PreviewPlayer] No preloaded video, creating new element for clip ${currentClip.id}`);
+      
+      // Fallback: create new video element
+      // This should rarely happen if preloading works correctly
+      const video = document.createElement('video');
+      video.className = 'w-auto h-auto max-w-full max-h-full';
+      video.style.maxWidth = '100%';
+      video.style.maxHeight = '100%';
+      video.style.objectFit = 'contain';
+      video.muted = false;
+      video.playsInline = true;
+      video.controls = false;
+      video.dataset.clipId = currentClip.id;
+      
+      // Get blob URL and load
+      videoCache.getBlobUrl(currentMedia.path).then(blobUrl => {
+        if (blobUrl) {
+          video.src = blobUrl;
+          video.currentTime = currentClip.trimStart;
+        }
+      }).catch(err => {
+        console.error('[PreviewPlayer] Failed to load video:', err);
+      });
+      
+      if (containerRef.current) {
+        // Hide old video
+        if (currentVideoRef.current && currentVideoRef.current.parentNode) {
+          currentVideoRef.current.style.display = 'none';
+        }
+        
+        containerRef.current.appendChild(video);
+        currentVideoRef.current = video;
+      }
+    }
+  }, [currentClip, currentMedia]);
   
-  // Render error state
-  if (error) {
-    return (
-      <div className="preview-player h-full w-full flex items-center justify-center bg-black">
-        <div className="text-red-500 text-center">
-          <p className="text-lg mb-2">Error loading video</p>
-          <p className="text-sm text-gray-400">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
+  // Use playback sync with current video ref
+  usePlaybackSync({ 
+    videoRef: currentVideoRef, 
+    currentClip, 
+    videoTime 
+  });
   
   return (
     <div className="preview-player h-full w-full flex flex-col bg-black overflow-hidden">
-      <div className="flex-1 flex items-center justify-center p-4 min-h-0 min-w-0">
-        {currentMedia && videoSrc ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <video
-              ref={videoRef}
-              src={videoSrc}
-              className="w-auto h-auto max-w-full max-h-full"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain'
-              }}
-              playsInline
-              muted={false}
-              controls={false}
-            />
-          </div>
-        ) : (
+      <div 
+        ref={containerRef}
+        className="flex-1 flex items-center justify-center p-4 min-h-0 min-w-0"
+      >
+        {!currentMedia && (
           <div className="text-gray-500 text-center">
             <p className="text-lg mb-2">No clip at current position</p>
             <p className="text-sm">Add clips to the timeline to preview</p>

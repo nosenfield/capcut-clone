@@ -30,7 +30,11 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
   // Sync video currentTime when playhead changes (while paused)
   useEffect(() => {
     if (videoRef.current && currentClip && !isPlaying) {
-      videoRef.current.currentTime = videoTime;
+      const video = videoRef.current;
+      // Only seek if significantly different (avoid micro-seeks)
+      if (Math.abs(video.currentTime - videoTime) > 0.1) {
+        video.currentTime = videoTime;
+      }
     }
   }, [videoRef, currentClip, videoTime, isPlaying]);
   
@@ -71,33 +75,14 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
       if (currentClip && videoRef.current) {
         // IN CLIP: Let video element drive time
         const video = videoRef.current;
-        let actualVideoTime = video.currentTime;
-        const clipEndTime = currentClip.startTime + currentClip.duration;
         
-        // Initialize video time if it's not in the valid range for this clip
-        const expectedStart = currentClip.trimStart;
-        const expectedEnd = currentClip.trimStart + currentClip.duration;
-        
-        // Check if video is at the wrong time (happens when entering clip)
-        if (actualVideoTime < expectedStart || actualVideoTime > expectedEnd) {
-          // Calculate correct video time based on current playhead position
-          const offsetIntoClip = currentPos - currentClip.startTime;
-          const correctVideoTime = currentClip.trimStart + offsetIntoClip;
-          
-          console.log('[PlaybackSync] ⚠️ Clip START - entering clip:', {
-            playheadPos: currentPos.toFixed(3),
-            clipStart: currentClip.startTime.toFixed(3),
-            settingVideoTime: correctVideoTime.toFixed(3),
-            trimStart: currentClip.trimStart.toFixed(3),
-          });
-          
-          // Set video time before reading from it
-          video.currentTime = correctVideoTime;
-          actualVideoTime = correctVideoTime;
-        }
-        
+        // ✅ NO SEEKING - just read time and calculate position
+        // Video element should already be at correct time from pool
+        const actualVideoTime = video.currentTime;
         const offsetIntoClip = actualVideoTime - currentClip.trimStart;
         newPosition = currentClip.startTime + offsetIntoClip;
+        
+        const clipEndTime = currentClip.startTime + currentClip.duration;
         
         // Detect if video has reached the trimmed end (video stops advancing)
         // When actualVideoTime stops advancing and we're at the trimmed end point,
@@ -168,38 +153,14 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
     };
     
     // Start playing video when isPlaying is true and we have a clip
-    if (currentClip && videoRef.current && videoRef.current.readyState >= 2) {
-      if (videoRef.current.paused) {
-        const video = videoRef.current;
-        
-        // Set initial time before playing
-        const currentPos = useTimelineStore.getState().playheadPosition;
-        const offsetIntoClip = currentPos - currentClip.startTime;
-        const initialTime = currentClip.trimStart + offsetIntoClip;
-        
-        // Set up one-time listener for seeked event
-        const handleSeekedOnce = () => {
-          video.removeEventListener('seeked', handleSeekedOnce);
-          // Only play if video is still ready after seek
-          if (video.readyState >= 2) {
-            video.play().catch(err => {
-              handleError(err, 'usePlaybackSync.startPlayback');
-              setIsPlaying(false);
-            });
-          }
-        };
-        
-        // If we need to seek first, wait for seek to complete
-        if (Math.abs(video.currentTime - initialTime) > 0.1) {
-          video.addEventListener('seeked', handleSeekedOnce);
-          video.currentTime = initialTime;
-        } else {
-          // Already at correct position, just play
-          video.play().catch(err => {
-            handleError(err, 'usePlaybackSync.startPlayback');
-            setIsPlaying(false);
-          });
-        }
+    // Video element should already be at correct time from pool
+    if (currentClip && videoRef.current) {
+      const video = videoRef.current;
+      if (video.paused && video.readyState >= 3) {
+        video.play().catch(err => {
+          handleError(err, 'usePlaybackSync.startPlayback');
+          setIsPlaying(false);
+        });
       }
     }
     
