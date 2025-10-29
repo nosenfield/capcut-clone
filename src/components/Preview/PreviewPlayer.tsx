@@ -83,39 +83,63 @@ export const PreviewPlayer: React.FC = () => {
       }
       
       currentVideoRef.current = preloadedVideo;
-    } else if (!preloadedVideo && (!currentVideoRef.current || currentVideoRef.current.dataset.clipId !== currentClip.id)) {
-      console.log(`[PreviewPlayer] No preloaded video, creating new element for clip ${currentClip.id}`);
+    } else if (!preloadedVideo) {
+      // Check if we need to create/update fallback video
+      const needsNewVideo = !currentVideoRef.current || 
+                           currentVideoRef.current.dataset.clipId !== currentClip.id ||
+                           currentVideoRef.current.dataset.mediaPath !== currentMedia.path;
       
-      // Fallback: create new video element
-      // This should rarely happen if preloading works correctly
-      const video = document.createElement('video');
-      video.className = 'w-auto h-auto max-w-full max-h-full';
-      video.style.maxWidth = '100%';
-      video.style.maxHeight = '100%';
-      video.style.objectFit = 'contain';
-      video.muted = false;
-      video.playsInline = true;
-      video.controls = false;
-      video.dataset.clipId = currentClip.id;
-      
-      // Get blob URL and load
-      videoCache.getBlobUrl(currentMedia.path).then(blobUrl => {
-        if (blobUrl) {
-          video.src = blobUrl;
-          video.currentTime = currentClip.trimStart;
-        }
-      }).catch(err => {
-        console.error('[PreviewPlayer] Failed to load video:', err);
-      });
-      
-      if (containerRef.current) {
-        // Hide old video
-        if (currentVideoRef.current && currentVideoRef.current.parentNode) {
-          currentVideoRef.current.style.display = 'none';
-        }
+      if (needsNewVideo) {
+        console.log(`[PreviewPlayer] No preloaded video, creating fallback element for clip ${currentClip.id}`);
         
-        containerRef.current.appendChild(video);
-        currentVideoRef.current = video;
+        // Fallback: create new video element
+        // This should rarely happen if preloading works correctly
+        const video = document.createElement('video');
+        video.className = 'w-auto h-auto max-w-full max-h-full';
+        video.style.maxWidth = '100%';
+        video.style.maxHeight = '100%';
+        video.style.objectFit = 'contain';
+        video.muted = false;
+        video.playsInline = true;
+        video.controls = false;
+        video.dataset.clipId = currentClip.id;
+        video.dataset.mediaPath = currentMedia.path;
+        
+        // Get blob URL and load with proper event handling
+        videoCache.getBlobUrl(currentMedia.path).then(blobUrl => {
+          if (blobUrl && video.parentNode) {
+            video.src = blobUrl;
+            
+            // Wait for metadata before seeking
+            const handleLoadedMetadata = () => {
+              video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+              video.currentTime = currentClip.trimStart;
+              console.log(`[PreviewPlayer] Fallback video ready for clip ${currentClip.id}`);
+            };
+            
+            video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+            
+            // Timeout fallback
+            setTimeout(() => {
+              video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+              if (video.readyState >= 1) {
+                video.currentTime = currentClip.trimStart;
+              }
+            }, 1000);
+          }
+        }).catch(err => {
+          console.error('[PreviewPlayer] Failed to load fallback video:', err);
+        });
+        
+        if (containerRef.current) {
+          // Hide old video
+          if (currentVideoRef.current && currentVideoRef.current.parentNode) {
+            currentVideoRef.current.style.display = 'none';
+          }
+          
+          containerRef.current.appendChild(video);
+          currentVideoRef.current = video;
+        }
       }
     }
   }, [currentClip, currentMedia]);

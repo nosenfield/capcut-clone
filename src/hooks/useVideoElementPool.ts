@@ -19,6 +19,7 @@ interface VideoElementState {
   element: HTMLVideoElement;
   clipId: string;
   mediaPath: string;
+  trimStart: number;
   isReady: boolean;
   lastUsed: number;
 }
@@ -32,13 +33,25 @@ class VideoElementPool {
 
   /**
    * Get a video element for a clip if it's ready
+   * Returns null if not ready or if clip properties have changed
    */
-  getElement(clipId: string, _mediaPath: string, _trimStart: number): HTMLVideoElement | null {
+  getElement(clipId: string, mediaPath: string, trimStart: number): HTMLVideoElement | null {
     const existing = this.pool.get(clipId);
     if (existing && existing.isReady) {
-      existing.lastUsed = Date.now();
-      console.log(`[VideoPool] Retrieved preloaded clip ${clipId}`);
-      return existing.element;
+      // Verify clip properties haven't changed (e.g., from repositioning/trimming)
+      if (existing.mediaPath === mediaPath && Math.abs(existing.trimStart - trimStart) < 0.01) {
+        existing.lastUsed = Date.now();
+        console.log(`[VideoPool] Retrieved preloaded clip ${clipId} at ${trimStart}s`);
+        return existing.element;
+      } else {
+        // Clip properties changed - invalidate this entry
+        console.log(`[VideoPool] Clip ${clipId} properties changed, invalidating pool entry`);
+        this.pool.delete(clipId);
+        if (existing.element.parentNode) {
+          document.body.removeChild(existing.element);
+        }
+        existing.element.src = '';
+      }
     }
     return null;
   }
@@ -73,6 +86,7 @@ class VideoElementPool {
       element: video,
       clipId,
       mediaPath,
+      trimStart,
       isReady: false,
       lastUsed: Date.now(),
     };

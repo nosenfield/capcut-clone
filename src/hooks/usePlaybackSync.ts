@@ -5,7 +5,7 @@
  * Manages playback state, playhead updates, and video seeking.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTimelineStore } from '../store/timelineStore';
 import { TimelineClip } from '../types/timeline';
 import { handleError } from '../utils/errors';
@@ -26,6 +26,62 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
   const setIsPlaying = useTimelineStore((state) => state.setIsPlaying);
   const setPlayheadPosition = useTimelineStore((state) => state.setPlayheadPosition);
   const compositionLength = useTimelineStore((state) => state.compositionLength);
+  
+  // Track last clip to detect clip changes
+  const lastClipIdRef = useRef<string | null>(null);
+  const isSeekingRef = useRef<boolean>(false);
+  
+  // Handle clip changes - prepare video element when entering new clip
+  useEffect(() => {
+    if (!currentClip || !videoRef.current || !isPlaying) {
+      lastClipIdRef.current = currentClip?.id || null;
+      return;
+    }
+    
+    const video = videoRef.current;
+    
+    // Detect clip change
+    if (lastClipIdRef.current !== currentClip.id) {
+      console.log(`[PlaybackSync] Entering clip ${currentClip.id}`);
+      lastClipIdRef.current = currentClip.id;
+      
+      // Calculate target time
+      const currentPos = useTimelineStore.getState().playheadPosition;
+      const offsetIntoClip = currentPos - currentClip.startTime;
+      const targetTime = currentClip.trimStart + offsetIntoClip;
+      
+      // Check if video needs seeking
+      const timeDiff = Math.abs(video.currentTime - targetTime);
+      if (timeDiff > 0.1) {
+        console.log(`[PlaybackSync] Video time mismatch (${timeDiff.toFixed(2)}s), seeking to ${targetTime.toFixed(2)}s`);
+        isSeekingRef.current = true;
+        
+        const handleSeeked = () => {
+          video.removeEventListener('seeked', handleSeeked);
+          isSeekingRef.current = false;
+          console.log(`[PlaybackSync] Seek complete for clip ${currentClip.id}`);
+          
+          // Start playback if ready
+          if (isPlaying && video.paused && video.readyState >= 3) {
+            video.play().catch(err => {
+              handleError(err, 'usePlaybackSync.clipChange');
+            });
+          }
+        };
+        
+        video.addEventListener('seeked', handleSeeked, { once: true });
+        video.currentTime = targetTime;
+        
+        // Timeout fallback
+        setTimeout(() => {
+          video.removeEventListener('seeked', handleSeeked);
+          isSeekingRef.current = false;
+        }, 200);
+      } else {
+        console.log(`[PlaybackSync] Video already at correct time (${video.currentTime.toFixed(2)}s)`);
+      }
+    }
+  }, [currentClip, videoRef, isPlaying]);
   
   // Sync video currentTime when playhead changes (while paused)
   useEffect(() => {
@@ -120,8 +176,8 @@ export const usePlaybackSync = ({ videoRef, currentClip, videoTime }: UsePlaybac
             video.pause();
           }
         } else {
-          // Ensure video is playing if it paused AND ready
-          if (video.paused && video.readyState >= 2) {
+          // Ensure video is playing if it paused AND ready (but not if seeking)
+          if (video.paused && video.readyState >= 3 && !isSeekingRef.current) {
             video.play().catch(err => {
               handleError(err, 'usePlaybackSync.updatePlayhead');
               setIsPlaying(false);
