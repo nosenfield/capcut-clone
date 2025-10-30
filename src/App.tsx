@@ -4,10 +4,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { MediaLibrary } from "./components/MediaLibrary/MediaLibrary";
 import { Timeline } from "./components/Timeline/Timeline";
 import { PreviewPlayer } from "./components/Preview/PreviewPlayer";
-import { LayerPanel } from "./components/Timeline/LayerPanel";
+import { HashtagPanel } from "./components/Timeline/LayerPanel";
 import { ExportDialog } from "./components/ExportDialog/ExportDialog";
 import { RecordingPanel } from "./components/Recording/RecordingPanel";
-import { TranscriptionPanel } from "./components/Transcription/TranscriptionPanel";
 import { TranscriptViewer } from "./components/Transcription/TranscriptViewer";
 import { Toast } from "./components/Toast/Toast";
 import { useTimelineStore } from "./store/timelineStore";
@@ -16,7 +15,6 @@ import { useTranscriptionStore } from "./store/transcriptionStore";
 function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showRecordingPanel, setShowRecordingPanel] = useState(false);
-  const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false);
   const selectedClipId = useTimelineStore((state) => state.selectedClipId);
   const getTranscript = useTranscriptionStore((state) => state.getTranscript);
   const selectedTranscript = selectedClipId ? getTranscript(selectedClipId) : null;
@@ -27,10 +25,9 @@ function App() {
       {/* Top Row - Media Library and Preview Panel */}
       <div className="flex-1 flex flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* Media Library - Left */}
-        <div id="media-library-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
+        <div id="media-library-panel" className="w-[340px] flex-shrink-0 border-r border-gray-700">
           <MediaLibrary 
             onRecordClick={() => setShowRecordingPanel(true)}
-            onTranscribeClick={() => setShowTranscriptionPanel(true)}
           />
         </div>
         
@@ -51,9 +48,9 @@ function App() {
       
       {/* Bottom Row - Layer Panel and Timeline Panel */}
       <div className="h-64 flex flex-row border-t border-gray-700">
-        {/* Layer Panel - Left */}
-        <div id="layer-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
-          <LayerPanel />
+        {/* Hashtag Panel - Left */}
+        <div id="hashtag-panel" className="w-[340px] flex-shrink-0 border-r border-gray-700">
+          <HashtagPanel />
         </div>
         
         {/* Timeline Panel - Right */}
@@ -71,11 +68,6 @@ function App() {
       {/* Recording Panel */}
       {showRecordingPanel && (
         <RecordingPanel onClose={() => setShowRecordingPanel(false)} />
-      )}
-
-      {/* Transcription Panel */}
-      {showTranscriptionPanel && (
-        <TranscriptionPanel onClose={() => setShowTranscriptionPanel(false)} />
       )}
       
       {/* Toast Notifications */}
