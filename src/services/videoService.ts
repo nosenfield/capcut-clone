@@ -159,6 +159,24 @@ export class VideoService {
       throw createFFmpegError(String(error));
     }
   }
+
+  /**
+   * Create MediaFile from existing file path (e.g., after recording)
+   * Adds the file to the media library
+   */
+  async createMediaFileFromPath(path: string): Promise<MediaFile> {
+    try {
+      const mediaFile = await this.createMediaFile(path);
+      
+      // Add to media store (via import, which will add to store and timeline)
+      // This is a simple approach - in a more sophisticated implementation,
+      // we might directly add to store
+      return mediaFile;
+    } catch (error) {
+      handleError(error, 'VideoService.createMediaFileFromPath');
+      throw createFFmpegError(String(error));
+    }
+  }
 }
 
 // Export singleton instance

@@ -6,10 +6,12 @@ import { Timeline } from "./components/Timeline/Timeline";
 import { PreviewPlayer } from "./components/Preview/PreviewPlayer";
 import { LayerPanel } from "./components/Timeline/LayerPanel";
 import { ExportDialog } from "./components/ExportDialog/ExportDialog";
+import { RecordingPanel } from "./components/Recording/RecordingPanel";
 import { Toast } from "./components/Toast/Toast";
 
 function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showRecordingPanel, setShowRecordingPanel] = useState(false);
 
   return (
     <ErrorBoundary>
@@ -18,7 +20,7 @@ function App() {
       <div className="flex-1 flex flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* Media Library - Left */}
         <div id="media-library-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
-          <MediaLibrary />
+          <MediaLibrary onRecordClick={() => setShowRecordingPanel(true)} />
         </div>
         
         {/* Preview Panel - Right */}
@@ -48,6 +50,11 @@ function App() {
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
       />
+
+      {/* Recording Panel */}
+      {showRecordingPanel && (
+        <RecordingPanel onClose={() => setShowRecordingPanel(false)} />
+      )}
       
       {/* Toast Notifications */}
       <Toast />

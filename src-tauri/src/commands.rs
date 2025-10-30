@@ -3,7 +3,7 @@
 // Defines Tauri commands that expose FFmpeg operations to the frontend.
 // These commands are invoked from the React app and handle media operations.
 
-use crate::ffmpeg::{FFmpegExecutor, ClipInfo};
+use crate::ffmpeg::{FFmpegExecutor, ClipInfo, CameraInfo};
 
 /// Get media metadata from a video file
 #[tauri::command]
@@ -72,5 +72,12 @@ pub async fn export_video(
     
     // Convert Vec to slice for method call
     executor.export_video(&clips, &output_path, &resolution, fps, composition_length)
+}
+
+/// List available cameras using FFmpeg
+#[tauri::command]
+pub async fn list_cameras() -> Result<Vec<CameraInfo>, String> {
+    let executor = FFmpegExecutor::new()?;
+    executor.list_cameras()
 }
 

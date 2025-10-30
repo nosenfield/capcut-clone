@@ -32,6 +32,12 @@ pub struct ClipInfo {
     pub trim_end: f64,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CameraInfo {
+    pub index: u32,
+    pub name: String,
+}
+
 pub struct FFmpegExecutor {
     ffmpeg_path: PathBuf,
     ffprobe_path: PathBuf,
@@ -364,6 +370,204 @@ impl FFmpegExecutor {
         ));
         
         Ok(filters.join(";"))
+    }
+
+    /// Start screen recording using FFmpeg's avfoundation device
+    /// Returns the spawned process handle
+    pub fn start_screen_recording(
+        &self,
+        output_path: &str,
+        resolution: &str,
+        fps: u32,
+        capture_cursor: bool,
+        capture_clicks: bool,
+        audio_device: Option<&str>,
+    ) -> Result<std::process::Child, String> {
+        use std::process::{Command, Stdio};
+        
+        // avfoundation device format: "<video_device>:<audio_device>"
+        // Screen is typically index 3 ("Capture screen 0")
+        // Audio device is typically index 1 (microphone) or "none"
+        let video_device = "3"; // Capture screen 0
+        let audio = audio_device.unwrap_or("none");
+        let device_input = format!("{}:{}", video_device, audio);
+
+        let mut args = vec![
+            "-f".to_string(),
+            "avfoundation".to_string(),
+        ];
+
+        if capture_cursor {
+            args.push("-capture_cursor".to_string());
+            args.push("1".to_string());
+        }
+
+        if capture_clicks {
+            args.push("-capture_mouse_clicks".to_string());
+            args.push("1".to_string());
+        }
+
+        args.push("-i".to_string());
+        args.push(device_input);
+
+        // Video codec settings
+        args.push("-c:v".to_string());
+        args.push("libx264".to_string());
+        args.push("-preset".to_string());
+        args.push("ultrafast".to_string()); // Low latency for real-time recording
+        args.push("-crf".to_string());
+        args.push("23".to_string()); // Quality
+        args.push("-r".to_string());
+        args.push(fps.to_string());
+
+        // Resolution
+        if resolution != "source" {
+            args.push("-s".to_string());
+            args.push(resolution.to_string());
+        }
+
+        args.push("-y".to_string()); // Overwrite output
+        args.push(output_path.to_string());
+
+        let mut cmd = Command::new(&self.ffmpeg_path);
+        cmd.args(&args);
+        cmd.stdin(Stdio::piped()); // Must capture stdin for graceful shutdown
+        cmd.stderr(Stdio::piped());
+        cmd.stdout(Stdio::piped());
+
+        let child = cmd.spawn()
+            .map_err(|e| format!("Failed to start FFmpeg recording: {}", e))?;
+
+        Ok(child)
+    }
+
+    /// Start webcam recording using FFmpeg's avfoundation device
+    /// Returns the spawned process handle
+    pub fn start_webcam_recording(
+        &self,
+        output_path: &str,
+        camera_index: u32,
+        resolution: &str,
+        fps: u32,
+        audio_device: Option<&str>,
+    ) -> Result<std::process::Child, String> {
+        use std::process::{Command, Stdio};
+        
+        // avfoundation device format: "<video_device>:<audio_device>"
+        // Camera devices are typically at indices 0+ (before screen devices)
+        let audio = audio_device.unwrap_or("none");
+        let device_input = format!("{}:{}", camera_index, audio);
+
+        let mut args = vec![
+            "-f".to_string(),
+            "avfoundation".to_string(),
+            "-i".to_string(),
+            device_input,
+        ];
+
+        // Video codec settings
+        args.push("-c:v".to_string());
+        args.push("libx264".to_string());
+        args.push("-preset".to_string());
+        args.push("ultrafast".to_string());
+        args.push("-crf".to_string());
+        args.push("23".to_string());
+        args.push("-r".to_string());
+        args.push(fps.to_string());
+
+        // Resolution
+        if resolution != "source" {
+            args.push("-s".to_string());
+            args.push(resolution.to_string());
+        }
+
+        args.push("-y".to_string()); // Overwrite output
+        args.push(output_path.to_string());
+
+        let mut cmd = Command::new(&self.ffmpeg_path);
+        cmd.args(&args);
+        cmd.stdin(Stdio::piped()); // Must capture stdin for graceful shutdown
+        cmd.stderr(Stdio::piped());
+        cmd.stdout(Stdio::piped());
+
+        let child = cmd.spawn()
+            .map_err(|e| format!("Failed to start FFmpeg webcam recording: {}", e))?;
+
+        Ok(child)
+    }
+
+    /// List available cameras using FFmpeg's avfoundation device list
+    /// Returns a vector of camera information (index and name)
+    pub fn list_cameras(&self) -> Result<Vec<CameraInfo>, String> {
+        use std::process::Command;
+        
+        // Run FFmpeg with list_devices flag
+        // Output goes to stderr, not stdout
+        let output = Command::new(&self.ffmpeg_path)
+            .args(&[
+                "-f", "avfoundation",
+                "-list_devices", "true",
+                "-i", ""
+            ])
+            .output()
+            .map_err(|e| format!("Failed to execute FFmpeg: {}", e))?;
+        
+        // FFmpeg exits with error code 1 when listing devices, but that's expected
+        // The device list is in stderr
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        let mut cameras = Vec::new();
+        let lines: Vec<&str> = stderr.lines().collect();
+        
+        let mut in_video_devices = false;
+        
+        for line in lines {
+            // Look for video device section
+            if line.contains("AVFoundation video devices") {
+                in_video_devices = true;
+                continue;
+            }
+            
+            // Stop when we hit audio devices section
+            if line.contains("AVFoundation audio devices") {
+                break;
+            }
+            
+            if !in_video_devices {
+                continue;
+            }
+            
+            // Parse device line format: [AVFoundation indev @ 0x...] [<index>] <name>
+            // Example: "[AVFoundation indev @ 0x156630da0] [0] FaceTime HD Camera"
+            // Skip screen capture devices (typically "Capture screen")
+            if line.contains("Capture screen") {
+                continue;
+            }
+            
+            // Find the second bracket pair which contains the device index
+            // Pattern: ...] [<index>] <name>
+            let trimmed = line.trim();
+            // Find the last occurrence of "] [" pattern which indicates the start of device index
+            if let Some(device_start) = trimmed.rfind("] [") {
+                // Extract the part after "] ["
+                let device_part = &trimmed[device_start + 3..];
+                if let Some(bracket_end) = device_part.find(']') {
+                    // Extract index
+                    if let Ok(index) = device_part[..bracket_end].parse::<u32>() {
+                        // Extract name (everything after "] ")
+                        let name = device_part[bracket_end + 1..].trim();
+                        if !name.is_empty() {
+                            cameras.push(CameraInfo {
+                                index,
+                                name: name.to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(cameras)
     }
 }
 

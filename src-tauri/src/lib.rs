@@ -2,8 +2,10 @@
 
 mod commands;
 mod ffmpeg;
+mod recording;
 
-use commands::{export_video, generate_thumbnail, get_media_metadata};
+use commands::{export_video, generate_thumbnail, get_media_metadata, list_cameras};
+use recording::{start_screen_recording, start_webcam_recording, stop_recording, get_recording_status};
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -20,7 +22,12 @@ pub fn run() {
             greet,
             get_media_metadata,
             generate_thumbnail,
-            export_video
+            export_video,
+            list_cameras,
+            start_screen_recording,
+            start_webcam_recording,
+            stop_recording,
+            get_recording_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
