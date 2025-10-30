@@ -466,6 +466,8 @@ impl FFmpegExecutor {
         let mut args = vec![
             "-f".to_string(),
             "avfoundation".to_string(),
+            "-framerate".to_string(),
+            "30".to_string(),  // Camera supports 30 fps (not 29.97)
             "-i".to_string(),
             device_input,
         ];
