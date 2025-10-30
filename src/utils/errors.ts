@@ -53,7 +53,7 @@ export const toAppError = (error: unknown, context?: string): AppError => {
   if (context) {
     debugInfo += `\n\nContext: ${context}`;
   }
-  if (error instanceof Error && error.cause) {
+  if (error instanceof Error && 'cause' in error && error.cause) {
     debugInfo += `\n\nCause: ${error.cause}`;
   }
   

@@ -40,7 +40,6 @@ export class VideoService {
         } catch (error) {
           handleError(error, `VideoService.importVideos - ${path}`);
           const appError = toAppError(error, `VideoService.importVideos`);
-          const errorMsg = error instanceof Error ? error.message : String(error);
           errors.push(`${path.split('/').pop()}: ${appError.userMessage}${appError.context?.debug ? `\nDebug: ${appError.context.debug}` : ''}`);
         }
       }
