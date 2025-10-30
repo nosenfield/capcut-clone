@@ -127,7 +127,12 @@ impl FFmpegExecutor {
         
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("FFprobe failed: {}", stderr));
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let status_code = output.status.code().unwrap_or(-1);
+            return Err(format!(
+                "FFprobe failed (exit code: {}):\nStderr: {}\nStdout: {}\nCommand: ffprobe -v quiet -print_format json -show_format -show_streams \"{}\"",
+                status_code, stderr, stdout, file_path
+            ));
         }
         
         let json: Value = serde_json::from_slice(&output.stdout)

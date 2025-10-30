@@ -35,7 +35,7 @@ export class AppError extends Error {
 }
 
 /**
- * Convert unknown errors to AppError
+ * Convert unknown errors to AppError with full debug details
  */
 export const toAppError = (error: unknown, context?: string): AppError => {
   if (error instanceof AppError) {
@@ -43,6 +43,19 @@ export const toAppError = (error: unknown, context?: string): AppError => {
   }
   
   const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  
+  // Build debug information
+  let debugInfo = errorMessage;
+  if (errorStack) {
+    debugInfo += `\n\nStack trace:\n${errorStack}`;
+  }
+  if (context) {
+    debugInfo += `\n\nContext: ${context}`;
+  }
+  if (error instanceof Error && error.cause) {
+    debugInfo += `\n\nCause: ${error.cause}`;
+  }
   
   // Parse common error patterns
   if (errorMessage.includes('No such file') || errorMessage.includes('FILE_NOT_FOUND')) {
@@ -51,37 +64,43 @@ export const toAppError = (error: unknown, context?: string): AppError => {
       'The selected file could not be found. It may have been moved or deleted.',
       ErrorCode.FILE_NOT_FOUND,
       false,
-      { context, originalError: error }
+      { context, originalError: error, debug: debugInfo }
     );
   }
   
-  if (errorMessage.includes('permission denied') || errorMessage.includes('PERMISSION_DENIED')) {
+  if (errorMessage.includes('permission denied') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('Permission denied')) {
     return new AppError(
       errorMessage,
       'Permission denied. Please check file permissions and try again.',
       ErrorCode.PERMISSION_DENIED,
       true,
-      { context, originalError: error }
+      { context, originalError: error, debug: debugInfo }
     );
   }
   
-  if (errorMessage.includes('FFmpeg') || errorMessage.includes('FFMPEG')) {
+  if (errorMessage.includes('FFmpeg') || errorMessage.includes('FFMPEG') || errorMessage.includes('ffmpeg')) {
+    // Extract FFmpeg stderr if available
+    let ffmpegDetails = debugInfo;
+    if (error && typeof error === 'object' && 'stderr' in error) {
+      ffmpegDetails += `\n\nFFmpeg stderr:\n${String((error as any).stderr)}`;
+    }
+    
     return new AppError(
       errorMessage,
-      'Video processing failed. The file may be corrupted or in an unsupported format.',
+      `Video processing failed: ${errorMessage}`,
       ErrorCode.FFMPEG_FAILED,
       true,
-      { context, originalError: error }
+      { context, originalError: error, debug: ffmpegDetails }
     );
   }
   
-  // Default unknown error
+  // Default unknown error - include full details
   return new AppError(
     errorMessage,
-    'An unexpected error occurred. Please try again.',
+    `Error: ${errorMessage}`,
     ErrorCode.UNKNOWN,
     true,
-    { context, originalError: error }
+    { context, originalError: error, debug: debugInfo }
   );
 };
 
@@ -116,13 +135,14 @@ export const createFileNotFoundError = (filePath: string): AppError => {
   );
 };
 
-export const createFFmpegError = (stderr: string): AppError => {
+export const createFFmpegError = (stderr: string, command?: string): AppError => {
+  const debugInfo = `FFmpeg stderr:\n${stderr}${command ? `\n\nCommand: ${command}` : ''}`;
   return new AppError(
     `FFmpeg error: ${stderr}`,
-    'Video processing failed. The file may be corrupted or in an unsupported format.',
+    `Video processing failed: ${stderr.length > 200 ? stderr.substring(0, 200) + '...' : stderr}`,
     ErrorCode.FFMPEG_FAILED,
     true,
-    { stderr }
+    { stderr, command, debug: debugInfo }
   );
 };
 

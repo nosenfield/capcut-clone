@@ -113,8 +113,15 @@ export const RecordingPanel: React.FC<RecordingPanelProps> = ({ onClose }) => {
       setIsRecording(true);
     } catch (error) {
       console.error('Failed to start recording:', error);
-      const appError = toAppError(error);
-      setError(appError.userMessage);
+      const appError = toAppError(error, 'RecordingPanel.handleStartRecording');
+      setError({
+        message: appError.message,
+        userMessage: appError.userMessage,
+        code: appError.code,
+        debug: appError.context?.debug || appError.message,
+        context: appError.context,
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   };
 
@@ -141,8 +148,15 @@ export const RecordingPanel: React.FC<RecordingPanelProps> = ({ onClose }) => {
       }, 500);
     } catch (error) {
       console.error('Failed to stop recording:', error);
-      const appError = toAppError(error);
-      setError(appError.userMessage);
+      const appError = toAppError(error, 'RecordingPanel.handleStopRecording');
+      setError({
+        message: appError.message,
+        userMessage: appError.userMessage,
+        code: appError.code,
+        debug: appError.context?.debug || appError.message,
+        context: appError.context,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setIsRecording(false);
     }
   };

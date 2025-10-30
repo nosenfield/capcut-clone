@@ -140,9 +140,12 @@ pub async fn start_webcam_recording(
             }
             let stderr_output = String::from_utf8_lossy(&stderr_bytes);
             let error_msg = if !stderr_output.is_empty() {
-                format!("FFmpeg exited immediately: {}", stderr_output)
+                format!(
+                    "FFmpeg webcam recording failed to start.\n\nExit status: {:?}\nFull stderr output:\n{}\n\nPossible causes:\n- Camera permission not granted\n- Camera in use by another app\n- Camera not found\n- Invalid camera index",
+                    status, stderr_output
+                )
             } else {
-                format!("FFmpeg exited immediately with status: {:?}", status)
+                format!("FFmpeg exited immediately with status: {:?}. No stderr output available.", status)
             };
             eprintln!("{}", error_msg);
             return Err(error_msg);
@@ -231,12 +234,19 @@ pub async fn stop_recording() -> Result<String, String> {
                     let _ = stderr.read_to_string(&mut stderr_output);
                     if !stderr_output.is_empty() {
                         eprintln!("FFmpeg stderr:\n{}", stderr_output);
-                        // Check for common errors
+                        // Build detailed error message with full context
+                        let mut detailed_error = format!("FFmpeg recording error:\n{}", stderr_output);
+                        
+                        // Check for common errors and add helpful context
                         if stderr_output.contains("Permission denied") || stderr_output.contains("No permission") {
-                            error_message = Some("Camera permission denied. Please grant camera access in System Settings.".to_string());
+                            detailed_error = format!("Camera permission denied.\n\nFull FFmpeg output:\n{}\n\nPlease grant camera access in System Settings → Privacy & Security → Camera.", stderr_output);
                         } else if stderr_output.contains("Device not found") || stderr_output.contains("No such device") {
-                            error_message = Some("Camera not found or not accessible.".to_string());
+                            detailed_error = format!("Camera not found or not accessible.\n\nFull FFmpeg output:\n{}", stderr_output);
+                        } else if stderr_output.contains("Input/output error") {
+                            detailed_error = format!("Camera I/O error - camera may be in use by another application.\n\nFull FFmpeg output:\n{}", stderr_output);
                         }
+                        
+                        error_message = Some(detailed_error);
                     }
                 }
                 

@@ -6,10 +6,19 @@
 
 import { create } from 'zustand';
 
+interface ErrorDetails {
+  message: string;
+  userMessage?: string;
+  debug?: string;
+  code?: string;
+  context?: Record<string, any>;
+  stack?: string;
+}
+
 interface AppState {
   isExporting: boolean;
   exportProgress: number;
-  error: string | null;
+  error: ErrorDetails | null;
   
   // Recording state
   isRecording: boolean;
@@ -18,7 +27,7 @@ interface AppState {
   
   setIsExporting: (exporting: boolean) => void;
   setExportProgress: (progress: number) => void;
-  setError: (error: string | null) => void;
+  setError: (error: ErrorDetails | string | null) => void;
   
   // Recording actions
   setIsRecording: (recording: boolean) => void;
@@ -38,7 +47,14 @@ export const useAppStore = create<AppState>((set) => ({
   
   setIsExporting: (exporting) => set({ isExporting: exporting }),
   setExportProgress: (progress) => set({ exportProgress: progress }),
-  setError: (error) => set({ error }),
+  setError: (error) => {
+    // Convert string errors to ErrorDetails format
+    if (typeof error === 'string') {
+      set({ error: { message: error, userMessage: error } });
+    } else {
+      set({ error });
+    }
+  },
   
   // Recording actions
   setIsRecording: (recording) => set({ isRecording: recording }),

@@ -39,8 +39,9 @@ export class VideoService {
           mediaFiles.push(mediaFile);
         } catch (error) {
           handleError(error, `VideoService.importVideos - ${path}`);
-          const appError = toAppError(error);
-          errors.push(`${path.split('/').pop()}: ${appError.userMessage}`);
+          const appError = toAppError(error, `VideoService.importVideos`);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          errors.push(`${path.split('/').pop()}: ${appError.userMessage}${appError.context?.debug ? `\nDebug: ${appError.context.debug}` : ''}`);
         }
       }
       
@@ -93,7 +94,11 @@ export class VideoService {
       };
     } catch (error) {
       handleError(error, 'VideoService.createMediaFile');
-      throw createFFmpegError(String(error));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorStderr = error && typeof error === 'object' && 'stderr' in error 
+        ? String((error as any).stderr) 
+        : errorMsg;
+      throw createFFmpegError(errorStderr, `get_media_metadata for: ${path}`);
     }
   }
   

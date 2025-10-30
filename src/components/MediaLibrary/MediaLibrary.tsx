@@ -51,8 +51,15 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick }) => 
       });
     } catch (error) {
       console.error('Import failed:', error);
-      const appError = toAppError(error);
-      setError(appError.userMessage);
+      const appError = toAppError(error, 'MediaLibrary.handleImport');
+      setError({
+        message: appError.message,
+        userMessage: appError.userMessage,
+        code: appError.code,
+        debug: appError.context?.debug || appError.message,
+        context: appError.context,
+        stack: error instanceof Error ? error.stack : undefined
+      });
     } finally {
       setIsImporting(false);
     }
