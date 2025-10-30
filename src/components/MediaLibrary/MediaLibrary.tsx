@@ -12,7 +12,11 @@ import { MediaFile } from '../../types/media';
 import { v4 as uuidv4 } from 'uuid';
 import { toAppError } from '../../utils/errors';
 
-export const MediaLibrary: React.FC = () => {
+interface MediaLibraryProps {
+  onRecordClick?: () => void;
+}
+
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick }) => {
   const { files, selectedFileId, addMediaFile, removeMediaFile, selectMediaFile } = useMediaStore();
   const { tracks, addClip, removeClip } = useTimelineStore();
   const { setError } = useAppStore();
@@ -51,6 +55,29 @@ export const MediaLibrary: React.FC = () => {
       setError(appError.userMessage);
     } finally {
       setIsImporting(false);
+    }
+  };
+  
+  const handleInsert = (file: MediaFile, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    // Insert clip to the first track at the end
+    if (tracks.length > 0) {
+      const firstTrack = tracks[0];
+      const lastClip = firstTrack.clips[firstTrack.clips.length - 1];
+      const startTime = lastClip ? lastClip.startTime + lastClip.duration : 0;
+      
+      addClip({
+        id: uuidv4(),
+        mediaFileId: file.id,
+        trackId: firstTrack.id,
+        startTime: startTime,
+        duration: file.duration,
+        trimStart: 0,
+        trimEnd: 0,
+        layer: 0
+      });
     }
   };
   
@@ -100,14 +127,24 @@ export const MediaLibrary: React.FC = () => {
     <div data-name="media-library-container" className="media-library h-full flex flex-col bg-gray-900 text-white">
       <div data-name="media-library-header" className="p-4 border-b border-gray-700">
         <h2 data-name="media-library-title" className="text-lg font-bold text-red-500 mb-4">MEDIA LIBRARY</h2>
-        <button
-          data-name="media-library-import-button"
-          onClick={handleImport}
-          disabled={isImporting}
-          className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
-        >
-          {isImporting ? 'Importing...' : '+Add Clip'}
-        </button>
+        <div className="space-y-2">
+          <button
+            data-name="media-library-import-button"
+            onClick={handleImport}
+            disabled={isImporting}
+            className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
+          >
+            {isImporting ? 'Importing...' : '+Add Clip'}
+          </button>
+          {onRecordClick && (
+            <button
+              onClick={onRecordClick}
+              className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors font-medium"
+            >
+              Record
+            </button>
+          )}
+        </div>
       </div>
       
       <div data-name="media-library-content" className="flex-1 overflow-y-auto p-2">
@@ -123,6 +160,7 @@ export const MediaLibrary: React.FC = () => {
                 file={file}
                 isSelected={file.id === selectedFileId}
                 onSelect={() => selectMediaFile(file.id)}
+                onInsert={(e) => handleInsert(file, e)}
                 onRemove={(e) => handleRemove(file.id, e)}
                 formatDuration={formatDuration}
                 formatResolution={formatResolution}
@@ -139,6 +177,7 @@ interface MediaCardProps {
   file: MediaFile;
   isSelected: boolean;
   onSelect: () => void;
+  onInsert: (e: React.MouseEvent) => void;
   onRemove: (e: React.MouseEvent) => void;
   formatDuration: (seconds: number) => string;
   formatResolution: (width: number, height: number) => string;
@@ -148,20 +187,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
   file,
   isSelected,
   onSelect,
+  onInsert,
   onRemove
 }) => {
   const handleCardClick = (e: React.MouseEvent) => {
-    console.log('handleCardClick called');
-    console.log('Event target:', e.target);
-    // Don't select if clicking the remove button
+    // Don't select if clicking any button
     const target = e.target as HTMLElement;
     const isButton = target.closest('button');
-    console.log('Is button:', isButton);
     if (isButton) {
-      console.log('Ignoring card selection - clicked button');
       return;
     }
-    console.log('Selecting card');
     onSelect();
   };
   
@@ -195,6 +230,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {file.fileSize > 0 && (
             <span>{(file.fileSize / (1024 * 1024)).toFixed(1)}MB</span>
           )}
+        </div>
+        
+        <div className="flex gap-2 mt-2">
+          <button
+            data-name={`media-card-insert-button-${file.id}`}
+            onClick={onInsert}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors font-medium"
+            title="Insert into timeline"
+          >
+            Insert
+          </button>
         </div>
         
         <button
