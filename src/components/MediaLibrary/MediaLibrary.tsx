@@ -14,10 +14,9 @@ import { toAppError } from '../../utils/errors';
 
 interface MediaLibraryProps {
   onRecordClick?: () => void;
-  onTranscribeClick?: () => void;
 }
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick, onTranscribeClick }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick }) => {
   const { files, selectedFileId, addMediaFile, removeMediaFile, selectMediaFile } = useMediaStore();
   const { tracks, addClip, removeClip } = useTimelineStore();
   const { setError } = useAppStore();
@@ -135,29 +134,21 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick, onTra
     <div data-name="media-library-container" className="media-library h-full flex flex-col bg-gray-900 text-white">
       <div data-name="media-library-header" className="p-4 border-b border-gray-700">
         <h2 data-name="media-library-title" className="text-lg font-bold text-red-500 mb-4">MEDIA LIBRARY</h2>
-        <div className="space-y-2">
+        <div className="flex gap-2">
           <button
             data-name="media-library-import-button"
             onClick={handleImport}
             disabled={isImporting}
-            className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
+            className="flex-1 bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black px-4 py-2 rounded transition-colors font-medium"
           >
             {isImporting ? 'Importing...' : '+Add Clip'}
           </button>
           {onRecordClick && (
             <button
               onClick={onRecordClick}
-              className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors font-medium"
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors font-medium"
             >
               Record
-            </button>
-          )}
-          {onTranscribeClick && (
-            <button
-              onClick={onTranscribeClick}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors font-medium"
-            >
-              🎤 Transcribe
             </button>
           )}
         </div>
