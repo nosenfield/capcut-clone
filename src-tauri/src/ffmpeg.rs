@@ -472,8 +472,12 @@ impl FFmpegExecutor {
         args.push("ultrafast".to_string());
         args.push("-crf".to_string());
         args.push("23".to_string());
+        
+        // Frame rate - use exact integer (30) instead of fractional for camera compatibility
+        // Most cameras support 15-30 fps, so clamp to 30 max and use integer value
+        let clamped_fps = fps.min(30);
         args.push("-r".to_string());
-        args.push(fps.to_string());
+        args.push(clamped_fps.to_string());
 
         // Resolution
         if resolution != "source" {
