@@ -3,7 +3,12 @@
 // Defines Tauri commands that expose FFmpeg operations to the frontend.
 // These commands are invoked from the React app and handle media operations.
 
-use crate::ffmpeg::{FFmpegExecutor, ClipInfo, CameraInfo};
+use tauri::Emitter;
+use crate::ffmpeg::{FFmpegExecutor, ClipInfo, CameraInfo, AudioFormat};
+use crate::transcription::{
+    OpenAIClient, Transcript, TranscriptionConfig, whisper_to_transcript,
+    export_as_txt, export_as_srt, export_as_vtt, export_as_json,
+};
 
 /// Get media metadata from a video file
 #[tauri::command]
@@ -79,5 +84,83 @@ pub async fn export_video(
 pub async fn list_cameras() -> Result<Vec<CameraInfo>, String> {
     let executor = FFmpegExecutor::new()?;
     executor.list_cameras()
+}
+
+/// Transcribe a video clip using OpenAI Whisper
+#[tauri::command]
+pub async fn transcribe_clip(
+    clip_id: String,
+    file_path: String,
+    trim_start: f64,
+    duration: f64,
+    api_key: String,
+    config: TranscriptionConfig,
+    window: tauri::Window,
+) -> Result<Transcript, String> {
+
+    // Emit progress: Audio extraction
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": clip_id,
+        "stage": "extracting",
+        "percent": 0.0,
+        "message": "Extracting audio from video..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Extract audio
+    let executor = FFmpegExecutor::new()?;
+    let audio_path = executor
+        .extract_audio(&file_path, trim_start, duration, AudioFormat::Mp3)?;
+
+    // Emit progress: Transcribing
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": clip_id,
+        "stage": "transcribing",
+        "percent": 30.0,
+        "message": "Sending to OpenAI for transcription..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Transcribe
+    let client = OpenAIClient::new(api_key);
+    let whisper_response = client.transcribe(&audio_path, &config).await?;
+
+    // Clean up temporary audio file
+    let _ = tokio::fs::remove_file(&audio_path).await;
+
+    // Emit progress: Processing
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": clip_id,
+        "stage": "processing",
+        "percent": 90.0,
+        "message": "Processing transcription..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Convert to our format
+    let transcript = whisper_to_transcript(whisper_response, clip_id);
+
+    // Emit completion
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": transcript.clip_id.clone(),
+        "stage": "complete",
+        "percent": 100.0,
+        "message": "Transcription complete!"
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    Ok(transcript)
+}
+
+/// Export transcript to various formats
+#[tauri::command]
+pub async fn export_transcript(
+    transcript: Transcript,
+    output_path: String,
+    format: String,
+) -> Result<(), String> {
+    match format.as_str() {
+        "txt" => export_as_txt(&transcript, &output_path).await,
+        "srt" => export_as_srt(&transcript, &output_path).await,
+        "vtt" => export_as_vtt(&transcript, &output_path).await,
+        "json" => export_as_json(&transcript, &output_path).await,
+        _ => Err(format!("Unsupported format: {}", format)),
+    }
 }
 

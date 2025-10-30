@@ -8,6 +8,24 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+// Audio format enum for transcription
+#[derive(Debug, Clone, Copy)]
+pub enum AudioFormat {
+    Mp3,
+    Wav,
+    M4a,
+}
+
+impl AudioFormat {
+    pub fn extension(&self) -> &str {
+        match self {
+            AudioFormat::Mp3 => "mp3",
+            AudioFormat::Wav => "wav",
+            AudioFormat::M4a => "m4a",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MediaMetadata {
     pub duration: f64,
@@ -583,6 +601,70 @@ impl FFmpegExecutor {
         }
         
         Ok(cameras)
+    }
+
+    /// Extract audio from video clip to temporary file
+    /// Returns path to extracted audio file
+    pub fn extract_audio(
+        &self,
+        video_path: &str,
+        trim_start: f64,
+        duration: f64,
+        output_format: AudioFormat,
+    ) -> Result<PathBuf, String> {
+        let temp_dir = std::env::temp_dir();
+        let output_file = temp_dir.join(format!(
+            "audio_{}_{}.{}",
+            uuid::Uuid::new_v4(),
+            chrono::Utc::now().timestamp(),
+            output_format.extension()
+        ));
+
+        let output_path = output_file.to_str().ok_or("Invalid output path")?;
+
+        // Build FFmpeg command for audio extraction
+        let mut args = vec![
+            "-ss".to_string(),
+            trim_start.to_string(),
+            "-i".to_string(),
+            video_path.to_string(),
+            "-t".to_string(),
+            duration.to_string(),
+            "-vn".to_string(), // No video
+            "-acodec".to_string(),
+        ];
+
+        match output_format {
+            AudioFormat::Mp3 => {
+                args.push("libmp3lame".to_string());
+                args.push("-q:a".to_string());
+                args.push("2".to_string()); // High quality
+            }
+            AudioFormat::Wav => {
+                args.push("pcm_s16le".to_string());
+            }
+            AudioFormat::M4a => {
+                args.push("aac".to_string());
+                args.push("-b:a".to_string());
+                args.push("192k".to_string());
+            }
+        }
+
+        args.push("-y".to_string()); // Overwrite
+        args.push(output_path.to_string());
+
+        // Execute FFmpeg using self.ffmpeg_path
+        let output = Command::new(&self.ffmpeg_path)
+            .args(&args)
+            .output()
+            .map_err(|e| format!("FFmpeg execution failed: {}", e))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Audio extraction failed: {}", stderr));
+        }
+
+        Ok(output_file)
     }
 }
 

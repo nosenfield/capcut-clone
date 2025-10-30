@@ -3,8 +3,9 @@
 mod commands;
 mod ffmpeg;
 mod recording;
+mod transcription;
 
-use commands::{export_video, generate_thumbnail, get_media_metadata, list_cameras};
+use commands::{export_video, generate_thumbnail, get_media_metadata, list_cameras, transcribe_clip, export_transcript};
 use recording::{start_screen_recording, start_webcam_recording, stop_recording, get_recording_status};
 
 #[tauri::command]
@@ -27,7 +28,9 @@ pub fn run() {
             start_screen_recording,
             start_webcam_recording,
             stop_recording,
-            get_recording_status
+            get_recording_status,
+            transcribe_clip,
+            export_transcript
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
