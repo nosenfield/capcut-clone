@@ -69,6 +69,9 @@ export interface Transcript {
   
   /** ISO 8601 timestamp when transcript was created */
   createdAt: string;
+  
+  /** AI-generated hashtags based on transcription content (up to 10) */
+  hashtags?: string[];
 }
 
 /**

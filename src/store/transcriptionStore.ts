@@ -1,8 +1,9 @@
 /**
  * Transcription Store
  * 
- * Global state management for transcription (transcripts, API key, progress).
+ * Global state management for transcription (transcripts, progress).
  * Uses Zustand for lightweight, hook-based state management with persistence.
+ * Note: API key is read from VITE_OPENAI_API_KEY environment variable, not stored here.
  */
 
 import { create } from 'zustand';
@@ -14,10 +15,8 @@ interface TranscriptionState {
   activeTranscriptId: string | null;
   isTranscribing: boolean;
   progress: TranscriptionProgress | null;
-  apiKey: string | null;
   
   // Actions
-  setApiKey: (key: string) => void;
   addTranscript: (transcript: Transcript) => void;
   removeTranscript: (clipId: string) => void;
   getTranscript: (clipId: string) => Transcript | undefined;
@@ -34,9 +33,6 @@ export const useTranscriptionStore = create<TranscriptionState>()(
       activeTranscriptId: null,
       isTranscribing: false,
       progress: null,
-      apiKey: null,
-      
-      setApiKey: (key) => set({ apiKey: key }),
       
       addTranscript: (transcript) => set((state) => ({
         transcripts: {
@@ -67,6 +63,10 @@ export const useTranscriptionStore = create<TranscriptionState>()(
     {
       name: 'transcription-storage',
       // No custom serialization needed - Zustand handles objects natively
+      partialize: (state) => ({
+        transcripts: state.transcripts,
+        // Don't persist API key - use .env instead
+      }),
     }
   )
 );

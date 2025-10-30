@@ -40,6 +40,7 @@ pub struct Transcript {
     pub duration: f64,
     #[serde(rename = "createdAt")]
     pub created_at: String,
+    pub hashtags: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -203,6 +204,7 @@ pub fn whisper_to_transcript(
         id: uuid::Uuid::new_v4().to_string(),
         clip_id,
         language: whisper.language,
+        hashtags: None, // Hashtags will be generated in the frontend after transcription
         segments,
         words,
         full_text: whisper.text,

@@ -16,6 +16,7 @@ A desktop video editing application built with Tauri, React, and TypeScript. Edi
 - Node.js v18+
 - Rust (latest stable)
 - FFmpeg (see setup below)
+- OpenAI API key (for transcription feature - optional)
 
 ### Installation
 
@@ -24,8 +25,14 @@ A desktop video editing application built with Tauri, React, and TypeScript. Edi
    ```bash
    npm install
    ```
-3. Download FFmpeg binaries (see below)
-4. Run in development mode:
+3. Set up environment variables (optional - for transcription feature):
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OpenAI API key:
+   # VITE_OPENAI_API_KEY=sk-your-api-key-here
+   ```
+4. Download FFmpeg binaries (see below)
+5. Run in development mode:
    ```bash
    npm run tauri dev
    ```

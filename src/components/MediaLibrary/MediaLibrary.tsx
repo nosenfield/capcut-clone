@@ -14,9 +14,10 @@ import { toAppError } from '../../utils/errors';
 
 interface MediaLibraryProps {
   onRecordClick?: () => void;
+  onTranscribeClick?: () => void;
 }
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick, onTranscribeClick }) => {
   const { files, selectedFileId, addMediaFile, removeMediaFile, selectMediaFile } = useMediaStore();
   const { tracks, addClip, removeClip } = useTimelineStore();
   const { setError } = useAppStore();
@@ -149,6 +150,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ onRecordClick }) => 
               className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors font-medium"
             >
               Record
+            </button>
+          )}
+          {onTranscribeClick && (
+            <button
+              onClick={onTranscribeClick}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors font-medium"
+            >
+              🎤 Transcribe
             </button>
           )}
         </div>

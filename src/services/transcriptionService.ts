@@ -39,6 +39,7 @@ export class TranscriptionService {
         );
       }
 
+      console.log('[TranscriptionService] Invoking transcribe_clip command');
       const transcript = await invoke<Transcript>('transcribe_clip', {
         clipId,
         filePath,
@@ -47,6 +48,8 @@ export class TranscriptionService {
         apiKey,
         config,
       });
+
+      console.log('[TranscriptionService] Received transcript from backend:', transcript);
 
       // Clean up listener
       if (this.progressListener) {
@@ -141,6 +144,69 @@ export class TranscriptionService {
     return transcript.segments.find(
       (segment) => time >= segment.start && time < segment.end
     ) || null;
+  }
+
+  /**
+   * Generate hashtags from transcript content using OpenAI
+   */
+  async generateHashtags(
+    transcriptText: string,
+    apiKey: string,
+    maxHashtags: number = 10
+  ): Promise<string[]> {
+    try {
+      const prompt = `Based on the following video transcript, generate up to ${maxHashtags} relevant hashtags that summarize the key topics, themes, and content. Return only the hashtags, one per line, formatted with # symbols (e.g., #example #hashtag). Do not include any other text or explanation.
+
+Transcript:
+${transcriptText}`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          max_tokens: 200,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`OpenAI API error ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content || '';
+
+      // Parse hashtags from response
+      // Handle both formats: lines with #hashtag or just hashtag text
+      const hashtags = content
+        .split('\n')
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0)
+        .map((line: string) => {
+          // Remove # if present (we'll add it back when displaying)
+          const cleaned = line.replace(/^#+\s*/, '').trim();
+          return cleaned;
+        })
+        .filter((tag: string) => tag.length > 0)
+        .slice(0, maxHashtags);
+
+      return hashtags;
+    } catch (error) {
+      console.error('[TranscriptionService] Failed to generate hashtags:', error);
+      // Return empty array on error - don't fail the whole transcription
+      return [];
+    }
   }
 }
 

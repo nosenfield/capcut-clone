@@ -7,11 +7,19 @@ import { PreviewPlayer } from "./components/Preview/PreviewPlayer";
 import { LayerPanel } from "./components/Timeline/LayerPanel";
 import { ExportDialog } from "./components/ExportDialog/ExportDialog";
 import { RecordingPanel } from "./components/Recording/RecordingPanel";
+import { TranscriptionPanel } from "./components/Transcription/TranscriptionPanel";
+import { TranscriptViewer } from "./components/Transcription/TranscriptViewer";
 import { Toast } from "./components/Toast/Toast";
+import { useTimelineStore } from "./store/timelineStore";
+import { useTranscriptionStore } from "./store/transcriptionStore";
 
 function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showRecordingPanel, setShowRecordingPanel] = useState(false);
+  const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false);
+  const selectedClipId = useTimelineStore((state) => state.selectedClipId);
+  const getTranscript = useTranscriptionStore((state) => state.getTranscript);
+  const selectedTranscript = selectedClipId ? getTranscript(selectedClipId) : null;
 
   return (
     <ErrorBoundary>
@@ -20,7 +28,10 @@ function App() {
       <div className="flex-1 flex flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* Media Library - Left */}
         <div id="media-library-panel" className="w-80 flex-shrink-0 border-r border-gray-700">
-          <MediaLibrary onRecordClick={() => setShowRecordingPanel(true)} />
+          <MediaLibrary 
+            onRecordClick={() => setShowRecordingPanel(true)}
+            onTranscribeClick={() => setShowTranscriptionPanel(true)}
+          />
         </div>
         
         {/* Preview Panel - Right */}
@@ -29,6 +40,12 @@ function App() {
           <div className="flex-1 bg-black overflow-hidden">
             <PreviewPlayer />
           </div>
+          {/* Transcript Viewer - Show below preview if transcript exists */}
+          {selectedTranscript && selectedClipId && (
+            <div className="h-64 border-t border-gray-700">
+              <TranscriptViewer clipId={selectedClipId} />
+            </div>
+          )}
         </div>
       </div>
       
@@ -54,6 +71,11 @@ function App() {
       {/* Recording Panel */}
       {showRecordingPanel && (
         <RecordingPanel onClose={() => setShowRecordingPanel(false)} />
+      )}
+
+      {/* Transcription Panel */}
+      {showTranscriptionPanel && (
+        <TranscriptionPanel onClose={() => setShowTranscriptionPanel(false)} />
       )}
       
       {/* Toast Notifications */}
