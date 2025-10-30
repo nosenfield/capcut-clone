@@ -1,110 +1,84 @@
 # CapCut Clone - Video Editor
 
-A desktop video editing application built with Tauri, React, and TypeScript. Edit videos locally with timeline-based editing, clip trimming, and professional export capabilities.
+A desktop video editing application built with Tauri, React, and TypeScript. Edit videos locally with timeline-based editing, clip trimming, AI-powered transcription, hashtag generation, and professional export capabilities.
 
-## 📚 Documentation
-
-- **[Architecture Overview](_docs/architecture.md)** - Complete system specification and design
-- **[MVP Task List](_docs/task-list-mvp.md)** - Development roadmap for MVP
-- **[Full Product Tasks](_docs/task-list-final.md)** - Post-MVP feature roadmap
-- **[Memory Bank](memory-bank/)** - AI development context and project state
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js v18+
 - Rust (latest stable)
-- FFmpeg (see setup below)
-- OpenAI API key (for transcription feature - optional)
+- FFmpeg binaries (see setup below)
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Set up environment variables (optional - for transcription feature):
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your OpenAI API key:
-   # VITE_OPENAI_API_KEY=sk-your-api-key-here
-   ```
-4. Download FFmpeg binaries (see below)
-5. Run in development mode:
-   ```bash
-   npm run tauri dev
-   ```
+```bash
+# Clone and install dependencies
+npm install
 
-### FFmpeg Setup
+# Set up FFmpeg binaries (macOS)
+cp /opt/homebrew/bin/ffmpeg src-tauri/binaries/
+cp /opt/homebrew/bin/ffprobe src-tauri/binaries/
+chmod +x src-tauri/binaries/*
 
-Download FFmpeg and FFprobe binaries for macOS and place them in `src-tauri/binaries/`:
+# Optional: Add OpenAI API key for transcription/hashtag features
+cp .env.example .env
+# Edit .env: VITE_OPENAI_API_KEY=sk-your-key-here
 
-1. Download from [FFmpeg official site](https://ffmpeg.org/download.html) or use Homebrew
-2. Copy binaries:
-   ```bash
-   cp /opt/homebrew/bin/ffmpeg src-tauri/binaries/
-   cp /opt/homebrew/bin/ffprobe src-tauri/binaries/
-   ```
-3. Make executable:
-   ```bash
-   chmod +x src-tauri/binaries/ffmpeg
-   chmod +x src-tauri/binaries/ffprobe
-   ```
+# Run in development
+npm run tauri dev
+```
 
-> **Note**: Binaries are gitignored due to size (~80MB). Each developer must download them separately.
+### Build
+
+```bash
+npm run build              # Build frontend
+npm run tauri build        # Build desktop app (.app bundle)
+```
+
+## ✨ Features
+
+- **Media Library**: Import and manage video files with thumbnails
+- **Timeline Editor**: Drag-and-drop clips, trim, rearrange
+- **Video Preview**: Real-time playback synchronized with timeline
+- **AI Transcription**: OpenAI Whisper-powered transcription with timeline support
+- **Hashtag Generation**: AI-generated hashtags from transcript content
+- **Video Export**: Export timeline to MP4 with configurable settings
+
+## 🛠 Tech Stack
+
+- **Frontend**: React 19 + TypeScript + TailwindCSS v4
+- **Backend**: Rust + Tauri v2
+- **State**: Zustand
+- **Canvas**: Konva.js (timeline rendering)
+- **Media**: FFmpeg (bundled)
+- **AI**: OpenAI Whisper API (optional)
 
 ## 📁 Project Structure
 
 ```
-├── _docs/              # Project documentation
-├── memory-bank/        # AI context (persistent across sessions)
-├── src/                # React frontend
-│   ├── components/     # UI components
-│   ├── store/         # Zustand state management
-│   ├── services/      # Business logic
-│   └── types/         # TypeScript definitions
-├── src-tauri/         # Rust backend
-│   ├── src/           # Rust source code
-│   └── binaries/      # FFmpeg binaries (gitignored)
-└── scripts/           # Utility scripts
+src/                # React frontend (components, store, services)
+src-tauri/         # Rust backend (commands, FFmpeg executor)
+_docs/             # Architecture and task documentation
+memory-bank/       # AI development context
 ```
 
-## 🛠️ Development
+## 📚 Documentation
 
-### Available Scripts
+- **[Architecture](_docs/architecture.md)** - Complete system specification
+- **[MVP Tasks](_docs/task-list-mvp.md)** - Development roadmap
+- **Memory Bank** - Project context and patterns
 
-- `npm run dev` - Start Vite dev server (frontend only)
-- `npm run tauri dev` - Start full desktop app with hot reload
-- `npm run build` - Build frontend for production
-- `npm run tauri build` - Build complete desktop application
+## 🎯 MVP Status
 
-### Recommended IDE Setup
+- ✅ Video import and library
+- ✅ Timeline-based editing
+- ✅ Clip trimming
+- ✅ Video preview
+- ✅ Timeline transcription
+- ✅ Hashtag generation
+- ✅ Video export
+- ✅ macOS desktop app
 
-- [VS Code](https://code.visualstudio.com/)
-- [Tauri Extension](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
-- [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-
-## 🎯 MVP Goals
-
-- Import video files (MP4/MOV)
-- Timeline-based editing with single track
-- Basic trim functionality
-- Video preview playback
-- Export to MP4
-- Package as macOS .app bundle
-
-## 📝 Notes
-
-- **AI Development**: This project uses a memory bank system for AI-assisted development. See `memory-bank/` for context.
-- **Context Summaries**: The `_context-summaries/` directory contains session summaries (gitignored).
-- **Temporary Files**: The `_temp/` directory is for scratch work (gitignored).
-
-## 📄 License
+## 📝 License
 
 MIT
-
-## 🙏 Credits
-
-Built with [Tauri](https://tauri.app), [React](https://react.dev), and [FFmpeg](https://ffmpeg.org)
