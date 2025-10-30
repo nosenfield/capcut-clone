@@ -6,4 +6,5 @@
 
 export * from './media';
 export * from './timeline';
+export * from './transcription';
 
