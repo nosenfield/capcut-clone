@@ -503,6 +503,7 @@ impl FFmpegExecutor {
         
         // Run FFmpeg with list_devices flag
         // Output goes to stderr, not stdout
+        // FFmpeg exits with non-zero code when listing devices (can't open empty input), which is expected
         let output = Command::new(&self.ffmpeg_path)
             .args(&[
                 "-f", "avfoundation",
@@ -512,9 +513,12 @@ impl FFmpegExecutor {
             .output()
             .map_err(|e| format!("Failed to execute FFmpeg: {}", e))?;
         
-        // FFmpeg exits with error code 1 when listing devices, but that's expected
-        // The device list is in stderr
+        // FFmpeg exits with error code when listing devices, but that's expected
+        // The device list is always in stderr regardless of exit code
         let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        // Log stderr for debugging (remove in production if desired)
+        eprintln!("FFmpeg list_devices stderr:\n{}", stderr);
         
         let mut cameras = Vec::new();
         let lines: Vec<&str> = stderr.lines().collect();

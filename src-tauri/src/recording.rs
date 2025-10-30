@@ -118,13 +118,42 @@ pub async fn start_webcam_recording(
     let executor = FFmpegExecutor::new()?;
     
     let audio = audio_device.as_deref();
-    let child = executor.start_webcam_recording(
+    let mut child = executor.start_webcam_recording(
         &output_path,
         camera_index,
         &resolution,
         fps,
         audio,
     )?;
+    
+    // Wait a moment to check if process starts successfully
+    std::thread::sleep(Duration::from_millis(500));
+    
+    // Check if process immediately exited (indicates startup failure)
+    match child.try_wait() {
+        Ok(Some(status)) => {
+            // Process exited immediately - capture stderr to see why
+            use std::io::Read;
+            let mut stderr_bytes = Vec::new();
+            if let Some(mut stderr) = child.stderr.take() {
+                let _ = stderr.read_to_end(&mut stderr_bytes);
+            }
+            let stderr_output = String::from_utf8_lossy(&stderr_bytes);
+            let error_msg = if !stderr_output.is_empty() {
+                format!("FFmpeg exited immediately: {}", stderr_output)
+            } else {
+                format!("FFmpeg exited immediately with status: {:?}", status)
+            };
+            eprintln!("{}", error_msg);
+            return Err(error_msg);
+        }
+        Ok(None) => {
+            // Process is running - good!
+        }
+        Err(e) => {
+            eprintln!("Error checking process status: {}", e);
+        }
+    }
     
     // Store process handle
     {
@@ -158,25 +187,67 @@ pub async fn stop_recording() -> Result<String, String> {
         state_guard.output_path.clone()
     };
     
-    // Gracefully stop FFmpeg process
+    // Gracefully stop FFmpeg process and capture any errors
     let mut process_guard = RECORDING_PROCESS.lock().unwrap();
+    let mut error_message = None;
+    
     if let Some(mut child) = process_guard.take() {
-        // Step 1: Send 'q' to stdin for graceful quit
-        if let Some(stdin) = child.stdin.as_mut() {
-            let _ = stdin.write_all(b"q");
-            let _ = stdin.flush();
+        // Check if process is still running
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                // Process already exited - capture stderr for diagnostics
+                if !status.success() {
+                    use std::io::Read;
+                    if let Some(mut stderr) = child.stderr.take() {
+                        let mut stderr_output = String::new();
+                        let _ = stderr.read_to_string(&mut stderr_output);
+                        if !stderr_output.is_empty() {
+                            error_message = Some(format!("FFmpeg process exited with error: {}", stderr_output));
+                            eprintln!("FFmpeg stderr on exit:\n{}", stderr_output);
+                        }
+                    }
+                }
+            }
+            Ok(None) => {
+                // Process still running - gracefully stop it
+                // Step 1: Send 'q' to stdin for graceful quit
+                if let Some(mut stdin) = child.stdin.take() {
+                    let _ = stdin.write_all(b"q");
+                    let _ = stdin.flush();
+                }
+                
+                // Step 2: Give FFmpeg time to finalize (1 second for webcam)
+                std::thread::sleep(Duration::from_millis(1000));
+                
+                // Step 3: If still running, kill it
+                if let Ok(None) = child.try_wait() {
+                    let _ = child.kill();
+                }
+                
+                // Step 4: Wait for completion and capture stderr
+                use std::io::Read;
+                if let Some(mut stderr) = child.stderr.take() {
+                    let mut stderr_output = String::new();
+                    let _ = stderr.read_to_string(&mut stderr_output);
+                    if !stderr_output.is_empty() {
+                        eprintln!("FFmpeg stderr:\n{}", stderr_output);
+                        // Check for common errors
+                        if stderr_output.contains("Permission denied") || stderr_output.contains("No permission") {
+                            error_message = Some("Camera permission denied. Please grant camera access in System Settings.".to_string());
+                        } else if stderr_output.contains("Device not found") || stderr_output.contains("No such device") {
+                            error_message = Some("Camera not found or not accessible.".to_string());
+                        }
+                    }
+                }
+                
+                let _ = child.wait();
+            }
+            Err(e) => {
+                eprintln!("Error checking process status: {}", e);
+            }
         }
-        
-        // Step 2: Give FFmpeg time to finalize (500ms)
-        std::thread::sleep(Duration::from_millis(500));
-        
-        // Step 3: If still running, kill it
-        if let Ok(None) = child.try_wait() {
-            let _ = child.kill();
-        }
-        
-        // Step 4: Wait for completion
-        let _ = child.wait();
+    } else {
+        error_message = Some("Recording process not found".to_string());
     }
     
     // Update state
@@ -186,7 +257,25 @@ pub async fn stop_recording() -> Result<String, String> {
         state_guard.start_time = None;
     }
     
-    output_path.ok_or("No output path found".to_string())
+    let output = output_path.ok_or("No output path found".to_string())?;
+    
+    // Check if output file exists and has content
+    if let Ok(metadata) = std::fs::metadata(&output) {
+        if metadata.len() == 0 {
+            let msg = error_message.unwrap_or_else(|| "Recording produced an empty file. Camera may not have been accessed.".to_string());
+            return Err(msg);
+        }
+    } else {
+        let msg = error_message.unwrap_or_else(|| format!("Recording file not found at: {}", output));
+        return Err(msg);
+    }
+    
+    // Return error message if we have one, but file exists and has content
+    if let Some(error) = error_message {
+        eprintln!("Warning: {}", error);
+    }
+    
+    Ok(output)
 }
 
 /// Get current recording status

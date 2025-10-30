@@ -48,12 +48,14 @@ export const RecordingPanel: React.FC<RecordingPanelProps> = ({ onClose }) => {
           console.error('Failed to load cameras:', error);
           const appError = toAppError(error);
           setError(appError.userMessage);
+          // Set an empty array to prevent infinite retry loops
+          setCameras([]);
         })
         .finally(() => {
           setIsLoadingCameras(false);
         });
     }
-  }, [recordingType, cameras.length, isLoadingCameras, setError]);
+  }, [recordingType]);
 
   // Timer effect
   useEffect(() => {
