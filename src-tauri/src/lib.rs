@@ -5,7 +5,7 @@ mod ffmpeg;
 mod recording;
 mod transcription;
 
-use commands::{export_video, generate_thumbnail, get_media_metadata, list_cameras, transcribe_clip, export_transcript};
+use commands::{export_video, generate_thumbnail, get_media_metadata, list_cameras, transcribe_clip, transcribe_timeline, export_transcript};
 use recording::{start_screen_recording, start_webcam_recording, stop_recording, get_recording_status};
 
 #[tauri::command]
@@ -30,6 +30,7 @@ pub fn run() {
             stop_recording,
             get_recording_status,
             transcribe_clip,
+            transcribe_timeline,
             export_transcript
         ])
         .run(tauri::generate_context!())

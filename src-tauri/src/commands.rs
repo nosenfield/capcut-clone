@@ -148,6 +148,71 @@ pub async fn transcribe_clip(
     Ok(transcript)
 }
 
+/// Transcribe entire timeline (all clips combined) using OpenAI Whisper
+#[tauri::command]
+pub async fn transcribe_timeline(
+    clips: Vec<ClipInfo>,
+    composition_length: f64,
+    api_key: String,
+    config: TranscriptionConfig,
+    window: tauri::Window,
+) -> Result<Transcript, String> {
+    if clips.is_empty() {
+        return Err("No clips on timeline to transcribe".to_string());
+    }
+
+    let timeline_id = "timeline".to_string();
+
+    // Emit progress: Audio extraction
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": timeline_id,
+        "stage": "extracting",
+        "percent": 0.0,
+        "message": "Extracting audio from timeline clips..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Extract and combine audio from all clips
+    let executor = FFmpegExecutor::new()?;
+    let audio_path = executor
+        .extract_and_combine_audio(&clips, composition_length)?;
+
+    // Emit progress: Transcribing
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": timeline_id,
+        "stage": "transcribing",
+        "percent": 50.0,
+        "message": "Sending combined timeline audio to OpenAI for transcription..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Transcribe
+    let client = OpenAIClient::new(api_key);
+    let whisper_response = client.transcribe(&audio_path, &config).await?;
+
+    // Clean up temporary audio file
+    let _ = tokio::fs::remove_file(&audio_path).await;
+
+    // Emit progress: Processing
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": timeline_id,
+        "stage": "processing",
+        "percent": 90.0,
+        "message": "Processing timeline transcription..."
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    // Convert to our format (use "timeline" as clip ID)
+    let transcript = whisper_to_transcript(whisper_response, timeline_id.clone());
+
+    // Emit completion
+    window.emit("transcription-progress", serde_json::json!({
+        "clipId": timeline_id,
+        "stage": "complete",
+        "percent": 100.0,
+        "message": "Timeline transcription complete!"
+    })).map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    Ok(transcript)
+}
+
 /// Export transcript to various formats
 #[tauri::command]
 pub async fn export_transcript(

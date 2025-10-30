@@ -603,6 +603,131 @@ impl FFmpegExecutor {
         Ok(cameras)
     }
 
+    /// Extract and combine audio from multiple clips in timeline order
+    /// Handles gaps between clips by inserting silence
+    pub fn extract_and_combine_audio(
+        &self,
+        clips: &[ClipInfo],
+        composition_length: f64,
+    ) -> Result<PathBuf, String> {
+        if clips.is_empty() {
+            return Err("No clips to extract audio from".to_string());
+        }
+
+        let temp_dir = std::env::temp_dir();
+        let output_path = temp_dir.join(format!("timeline_audio_{}.mp3", uuid::Uuid::new_v4()));
+        
+        // Build FFmpeg filter complex for audio concatenation with gap handling
+        let filter_complex = self.build_audio_filter_complex(clips, composition_length)?;
+        
+        let mut args = vec![
+            "-y".to_string(), // Overwrite output
+        ];
+        
+        // Add input files
+        for clip in clips {
+            args.push("-i".to_string());
+            args.push(clip.file_path.clone());
+        }
+        
+        // Add filter complex
+        args.push("-filter_complex".to_string());
+        args.push(filter_complex);
+        
+        // Output audio only (MP3)
+        args.extend_from_slice(&[
+            "-map".to_string(),
+            "[outa]".to_string(),
+            "-acodec".to_string(),
+            "libmp3lame".to_string(),
+            "-ar".to_string(),
+            "16000".to_string(), // 16kHz sample rate (Whisper optimal)
+            "-ac".to_string(),
+            "1".to_string(), // Mono
+            "-b:a".to_string(),
+            "128k".to_string(), // Bitrate
+            output_path.to_str().ok_or("Invalid output path")?.to_string(),
+        ]);
+        
+        let output = Command::new(&self.ffmpeg_path)
+            .args(&args)
+            .output()
+            .map_err(|e| format!("FFmpeg execution failed: {}", e))?;
+        
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Audio extraction failed: {}", stderr));
+        }
+        
+        Ok(output_path)
+    }
+
+    /// Build audio filter complex for audio concatenation with gap handling
+    fn build_audio_filter_complex(
+        &self,
+        clips: &[ClipInfo],
+        composition_length: f64,
+    ) -> Result<String, String> {
+        let mut filters = Vec::new();
+        let mut audio_indices = Vec::new();
+        let mut current_time = 0.0;
+        
+        // Build audio segments with silence gaps
+        for (i, clip) in clips.iter().enumerate() {
+            // Check if there's a gap before this clip
+            if clip.start_time > current_time {
+                let gap_duration = clip.start_time - current_time;
+                
+                // Create silence gap segment
+                let gap_filter = format!(
+                    "anullsrc=channel_layout=mono:sample_rate=16000:d={}[silence{}]",
+                    gap_duration,
+                    i
+                );
+                filters.push(gap_filter);
+                audio_indices.push(format!("[silence{}]", i));
+            }
+            
+            // Extract and trim audio from clip
+            let trim_filter = format!(
+                "[{}:a]atrim=start={}:duration={},asetpts=PTS-STARTPTS,aresample=16000:async=1[clip{}a]",
+                i,
+                clip.trim_start,
+                clip.duration,
+                i
+            );
+            filters.push(trim_filter);
+            audio_indices.push(format!("[clip{}a]", i));
+            
+            current_time = clip.start_time + clip.duration;
+        }
+        
+        // Add silence to fill to composition length if needed
+        if current_time < composition_length {
+            let gap_duration = composition_length - current_time;
+            let gap_index = clips.len();
+            
+            let gap_filter = format!(
+                "anullsrc=channel_layout=mono:sample_rate=16000:d={}[silence{}]",
+                gap_duration,
+                gap_index
+            );
+            filters.push(gap_filter);
+            audio_indices.push(format!("[silence{}]", gap_index));
+        }
+        
+        // Concatenate all audio segments (silence + clips + end silence)
+        let concat_inputs: String = audio_indices.join("");
+        
+        filters.push(format!(
+            "{}concat=n={}:v=0:a=1[outa]",
+            concat_inputs,
+            audio_indices.len()
+        ));
+        
+        Ok(filters.join(";"))
+    }
+
     /// Extract audio from video clip to temporary file
     /// Returns path to extracted audio file
     pub fn extract_audio(

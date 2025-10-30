@@ -147,6 +147,89 @@ export class TranscriptionService {
   }
 
   /**
+   * Transcribe entire timeline (all clips combined)
+   */
+  async transcribeTimeline(
+    clips: Array<{
+      filePath: string;
+      startTime: number;
+      duration: number;
+      trimStart: number;
+      trimEnd: number;
+    }>,
+    compositionLength: number,
+    apiKey: string,
+    config: TranscriptionConfig,
+    onProgress?: (progress: TranscriptionProgress) => void
+  ): Promise<Transcript> {
+    try {
+      // Set up progress listener
+      if (onProgress) {
+        this.progressListener = await listen<TranscriptionProgress>(
+          'transcription-progress',
+          (event) => {
+            if (event.payload.clipId === 'timeline') {
+              onProgress(event.payload);
+            }
+          }
+        );
+      }
+
+      console.log('[TranscriptionService] Invoking transcribe_timeline command');
+      const transcript = await invoke<Transcript>('transcribe_timeline', {
+        clips,
+        compositionLength,
+        apiKey,
+        config,
+      });
+
+      console.log('[TranscriptionService] Received timeline transcript from backend:', transcript);
+
+      // Clean up listener
+      if (this.progressListener) {
+        this.progressListener();
+        this.progressListener = null;
+      }
+
+      return transcript;
+    } catch (error) {
+      // Clean up listener on error
+      if (this.progressListener) {
+        this.progressListener();
+        this.progressListener = null;
+      }
+
+      handleError(error, 'TranscriptionService.transcribeTimeline');
+      
+      // Enhance error with transcription-specific context
+      const appError = toAppError(error, 'TranscriptionService.transcribeTimeline');
+      
+      // Check for specific API errors
+      if (appError.message.includes('API error 401')) {
+        throw new AppError(
+          appError.message,
+          'Invalid OpenAI API key. Please check your API key and try again.',
+          ErrorCode.PERMISSION_DENIED,
+          true,
+          appError.context
+        );
+      }
+      
+      if (appError.message.includes('API error 429')) {
+        throw new AppError(
+          appError.message,
+          'API rate limit exceeded. Please wait a moment and try again.',
+          'RATE_LIMIT_ERROR',
+          true,
+          appError.context
+        );
+      }
+      
+      throw appError;
+    }
+  }
+
+  /**
    * Generate hashtags from transcript content using OpenAI
    */
   async generateHashtags(

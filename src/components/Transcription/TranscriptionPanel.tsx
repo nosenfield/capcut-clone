@@ -37,6 +37,8 @@ export const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({ onClose 
     transcripts,
   } = useTranscriptionStore();
 
+  const { compositionLength } = useTimelineStore();
+  const [transcribeMode, setTranscribeMode] = useState<'clip' | 'timeline'>('clip');
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [language, setLanguage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -45,26 +47,9 @@ export const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({ onClose 
   const allClips = tracks.flatMap((track) => track.clips);
 
   const handleTranscribe = async () => {
-    if (!selectedClipId) {
-      setError('Please select a clip to transcribe');
-      return;
-    }
-
     const apiKey = getApiKey();
     if (!apiKey) {
       setError('OpenAI API key not found. Please set VITE_OPENAI_API_KEY in your .env file.');
-      return;
-    }
-
-    const clip = allClips.find((c) => c.id === selectedClipId);
-    if (!clip) {
-      setError('Clip not found');
-      return;
-    }
-
-    const mediaFile = files.find((f) => f.id === clip.mediaFileId);
-    if (!mediaFile) {
-      setError('Media file not found');
       return;
     }
 
@@ -72,44 +57,135 @@ export const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({ onClose 
     setIsTranscribing(true);
 
     try {
-      const transcript = await transcriptionService.transcribeClip(
-        clip.id,
-        mediaFile.path,
-        clip.trimStart,
-        clip.duration,
-        apiKey,
-        {
-          language: language || undefined,
-          model: 'whisper-1',
-          responseFormat: 'verbose_json',
-          temperature: 0.0,
-        },
-        (progress) => {
-          setProgress(progress);
+      let transcript: any;
+
+      if (transcribeMode === 'timeline') {
+        // Transcribe entire timeline
+        if (allClips.length === 0) {
+          setError('No clips on timeline to transcribe');
+          setIsTranscribing(false);
+          return;
         }
-      );
 
-      // Generate hashtags from transcript content
-      setProgress({
-        clipId: clip.id,
-        stage: 'processing',
-        percent: 95,
-        message: 'Generating hashtags...',
-      });
+        // Collect clips in timeline order (sorted by startTime)
+        const timelineClips = allClips
+          .filter((clip) => {
+            // Filter to composition length
+            return clip.startTime < compositionLength;
+          })
+          .map((clip) => {
+            const mediaFile = files.find((f) => f.id === clip.mediaFileId);
+            if (!mediaFile) throw new Error(`Media file not found: ${clip.mediaFileId}`);
+            
+            const effectiveDuration = Math.min(clip.duration, compositionLength - clip.startTime);
+            
+            return {
+              filePath: mediaFile.path,
+              startTime: clip.startTime,
+              duration: effectiveDuration,
+              trimStart: clip.trimStart,
+              trimEnd: clip.trimEnd,
+            };
+          })
+          .sort((a, b) => a.startTime - b.startTime);
 
-      try {
-        const hashtags = await transcriptionService.generateHashtags(
-          transcript.fullText,
+        transcript = await transcriptionService.transcribeTimeline(
+          timelineClips,
+          compositionLength,
           apiKey,
-          10
+          {
+            language: language || undefined,
+            model: 'whisper-1',
+            responseFormat: 'verbose_json',
+            temperature: 0.0,
+          },
+          (progress) => {
+            setProgress(progress);
+          }
         );
-        transcript.hashtags = hashtags;
-      } catch (error) {
-        // Log error but don't fail - hashtags are optional
-        console.error('Failed to generate hashtags:', error);
+
+        // Generate hashtags for timeline transcript
+        setProgress({
+          clipId: 'timeline',
+          stage: 'processing',
+          percent: 95,
+          message: 'Generating hashtags...',
+        });
+
+        try {
+          const hashtags = await transcriptionService.generateHashtags(
+            transcript.fullText,
+            apiKey,
+            10
+          );
+          transcript.hashtags = hashtags;
+        } catch (error) {
+          console.error('Failed to generate hashtags:', error);
+        }
+
+        // Store with clipId "timeline"
+        addTranscript(transcript);
+      } else {
+        // Transcribe single clip
+        if (!selectedClipId) {
+          setError('Please select a clip to transcribe');
+          setIsTranscribing(false);
+          return;
+        }
+
+        const clip = allClips.find((c) => c.id === selectedClipId);
+        if (!clip) {
+          setError('Clip not found');
+          setIsTranscribing(false);
+          return;
+        }
+
+        const mediaFile = files.find((f) => f.id === clip.mediaFileId);
+        if (!mediaFile) {
+          setError('Media file not found');
+          setIsTranscribing(false);
+          return;
+        }
+
+        transcript = await transcriptionService.transcribeClip(
+          clip.id,
+          mediaFile.path,
+          clip.trimStart,
+          clip.duration,
+          apiKey,
+          {
+            language: language || undefined,
+            model: 'whisper-1',
+            responseFormat: 'verbose_json',
+            temperature: 0.0,
+          },
+          (progress) => {
+            setProgress(progress);
+          }
+        );
+
+        // Generate hashtags from transcript content
+        setProgress({
+          clipId: clip.id,
+          stage: 'processing',
+          percent: 95,
+          message: 'Generating hashtags...',
+        });
+
+        try {
+          const hashtags = await transcriptionService.generateHashtags(
+            transcript.fullText,
+            apiKey,
+            10
+          );
+          transcript.hashtags = hashtags;
+        } catch (error) {
+          console.error('Failed to generate hashtags:', error);
+        }
+
+        addTranscript(transcript);
       }
 
-      addTranscript(transcript);
       setProgress(null);
       
       // Close panel on success
@@ -159,29 +235,68 @@ export const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({ onClose 
               </div>
             )}
 
-            {/* Clip Selection */}
+            {/* Transcription Mode */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Clip
+                Transcription Mode
               </label>
-              <select
-                value={selectedClipId || ''}
-                onChange={(e) => setSelectedClipId(e.target.value || null)}
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">-- Select a clip --</option>
-                {allClips.map((clip) => {
-                  const media = files.find((f) => f.id === clip.mediaFileId);
-                  const hasTranscript = transcripts[clip.id];
-                  return (
-                    <option key={clip.id} value={clip.id}>
-                      {media?.name || 'Unknown'} ({clip.duration.toFixed(1)}s)
-                      {hasTranscript && ' ✓'}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="transcribeMode"
+                    value="clip"
+                    checked={transcribeMode === 'clip'}
+                    onChange={(e) => setTranscribeMode(e.target.value as 'clip' | 'timeline')}
+                    className="mr-2"
+                  />
+                  <span className="text-gray-300">Single Clip</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="transcribeMode"
+                    value="timeline"
+                    checked={transcribeMode === 'timeline'}
+                    onChange={(e) => setTranscribeMode(e.target.value as 'clip' | 'timeline')}
+                    className="mr-2"
+                  />
+                  <span className="text-gray-300">Entire Timeline</span>
+                </label>
+                
+              </div>
+              {transcribeMode === 'timeline' && allClips.length > 0 && (
+                <p className="mt-2 text-xs text-gray-400">
+                  Will transcribe {allClips.length} clip{allClips.length !== 1 ? 's' : ''} from timeline
+                </p>
+              )}
             </div>
+
+            {/* Clip Selection (only for single clip mode) */}
+            {transcribeMode === 'clip' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Select Clip
+                </label>
+                <select
+                  value={selectedClipId || ''}
+                  onChange={(e) => setSelectedClipId(e.target.value || null)}
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">-- Select a clip --</option>
+                  {allClips.map((clip) => {
+                    const media = files.find((f) => f.id === clip.mediaFileId);
+                    const hasTranscript = transcripts[clip.id];
+                    return (
+                      <option key={clip.id} value={clip.id}>
+                        {media?.name || 'Unknown'} ({clip.duration.toFixed(1)}s)
+                        {hasTranscript && ' ✓'}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
 
             {/* Language (Optional) */}
             <div>
@@ -201,10 +316,10 @@ export const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({ onClose 
             <div className="flex gap-4">
               <button
                 onClick={handleTranscribe}
-                disabled={!selectedClipId || !getApiKey()}
+                disabled={(transcribeMode === 'clip' && !selectedClipId) || (transcribeMode === 'timeline' && allClips.length === 0) || !getApiKey()}
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
               >
-                Transcribe
+                {transcribeMode === 'timeline' ? 'Transcribe Timeline' : 'Transcribe Clip'}
               </button>
               <button
                 onClick={onClose}
